@@ -1,20 +1,36 @@
 const form = document.getElementById("payment-form");
 const output = document.getElementById("output");
+const formTitle = document.getElementById("form-title");
+const runButton = document.getElementById("runButton");
+const txTabs = Array.from(document.querySelectorAll(".tx-tab"));
 
 const fields = {
-  merchantId: document.getElementById("merchantId"),
-  terminalId: document.getElementById("terminalId"),
   cardNumber: document.getElementById("cardNumber"),
   expiry: document.getElementById("expiry"),
   cvv: document.getElementById("cvv"),
   amount: document.getElementById("amount"),
-  orderId: document.getElementById("orderId"),
+  zipCode: document.getElementById("zipCode"),
+  invoice: document.getElementById("invoice"),
+  referenceNo: document.getElementById("referenceNo"),
 };
 
+const txMeta = {
+  charge: { title: "Charge (Sale)", button: "Run Charge", host: "SALE" },
+  auth: { title: "Auth Only", button: "Run Auth", host: "AUTH" },
+  void: { title: "Void Transaction", button: "Run Void", host: "VOID" },
+  return: { title: "Return (Refund)", button: "Run Return", host: "RETURN" },
+};
+
+let activeTx = "charge";
+let lastReferenceNo = "";
+
 const appendLog = (text) => {
-  const currentTime = new Date().toLocaleTimeString("tr-TR");
-  output.textContent += `\n[${currentTime}] ${text}`;
+  output.textContent += `\n${text}`;
   output.scrollTop = output.scrollHeight;
+};
+
+const clearLog = () => {
+  output.textContent = "";
 };
 
 const cleanCardNumber = (value) => value.replace(/\D/g, "").slice(0, 16);
@@ -39,20 +55,33 @@ const isLuhnValid = (cardNumber) => {
   return total % 10 === 0;
 };
 
+const setModeUI = (mode) => {
+  activeTx = mode;
+  txTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tx === mode));
+  formTitle.textContent = txMeta[mode].title;
+  runButton.textContent = txMeta[mode].button;
+};
+
 const validate = () => {
   const errors = [];
   const amountValue = Number(fields.amount.value.replace(",", "."));
   const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+  const referenceValue = fields.referenceNo.value.trim();
 
-  if (!fields.merchantId.value.trim()) errors.push("Merchant ID zorunludur.");
-  if (!fields.terminalId.value.trim()) errors.push("Terminal ID zorunludur.");
-  if (!isLuhnValid(fields.cardNumber.value)) errors.push("Kart numarası geçersiz.");
-  if (!expiryRegex.test(fields.expiry.value)) errors.push("Son kullanma formatı AA/YY olmalıdır.");
-  if (!/^\d{3,4}$/.test(fields.cvv.value)) errors.push("CVV 3 veya 4 haneli olmalıdır.");
-  if (!Number.isFinite(amountValue) || amountValue <= 0) errors.push("Tutar 0'dan büyük olmalıdır.");
-  if (!fields.orderId.value.trim()) errors.push("Sipariş numarası zorunludur.");
+  if (!isLuhnValid(fields.cardNumber.value)) errors.push("Card number is invalid.");
+  if (!expiryRegex.test(fields.expiry.value)) errors.push("Expiration must be MM/YY.");
+  if (!/^\d{3,4}$/.test(fields.cvv.value)) errors.push("CVV must be 3 or 4 digits.");
+  if (!Number.isFinite(amountValue) || amountValue <= 0) errors.push("Amount must be greater than 0.");
+  if ((activeTx === "void" || activeTx === "return") && !referenceValue && !lastReferenceNo) {
+    errors.push("Void/Return formlarinda Original Ref # gereklidir.");
+  }
 
   return errors;
+};
+
+const simulate = async (message) => {
+  appendLog(message);
+  await new Promise((resolve) => setTimeout(resolve, 430));
 };
 
 fields.cardNumber.addEventListener("input", () => {
@@ -67,33 +96,52 @@ fields.cvv.addEventListener("input", () => {
   fields.cvv.value = fields.cvv.value.replace(/\D/g, "").slice(0, 4);
 });
 
+txTabs.forEach((tab) => {
+  tab.addEventListener("click", () => setModeUI(tab.dataset.tx));
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  output.textContent = "Hazır...";
+  clearLog();
 
   const errors = validate();
   if (errors.length > 0) {
-    appendLog("Doğrulama başarısız:");
+    appendLog("Validation failed:");
     errors.forEach((error) => appendLog(`- ${error}`));
     return;
   }
 
   const maskedCard = `${cleanCardNumber(fields.cardNumber.value).slice(0, 6)}******${cleanCardNumber(fields.cardNumber.value).slice(-4)}`;
-
-  appendLog("TSYS terminal bağlantısı hazırlanıyor...");
-  appendLog(`Merchant: ${fields.merchantId.value} | Terminal: ${fields.terminalId.value}`);
-  appendLog(`OrderId: ${fields.orderId.value} | Amount: ${fields.amount.value} TRY`);
-  appendLog(`Card: ${maskedCard}`);
-
-  await new Promise((resolve) => setTimeout(resolve, 850));
-  appendLog("AUTH request gönderildi.");
-  await new Promise((resolve) => setTimeout(resolve, 850));
-  appendLog("Bankadan yanıt alındı.");
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
+  const amount = Number(fields.amount.value.replace(",", ".")).toFixed(2);
+  const referenceInput = fields.referenceNo.value.trim();
+  const refToUse = referenceInput || lastReferenceNo || `TSYS-${Date.now()}`;
   const authCode = Math.floor(100000 + Math.random() * 900000);
-  const referenceNo = `TSYS-${Date.now()}`;
-  appendLog("SONUÇ: APPROVED");
+
+  await simulate(`Host Command: ${txMeta[activeTx].host}`);
+  await simulate(`Card: ${maskedCard}`);
+  await simulate(`Amount: ${amount} USD`);
+  await simulate(`Invoice: ${fields.invoice.value.trim() || "-"}`);
+  await simulate(`Billing ZIP: ${fields.zipCode.value.trim() || "-"}`);
+
+  if (activeTx === "void" || activeTx === "return") {
+    await simulate(`Original Ref #: ${refToUse}`);
+  }
+
+  await simulate("Sending request to TSYS gateway...");
+  await simulate("Receiving response...");
+
+  if (activeTx === "return") {
+    appendLog("Result: APPROVED (REFUND)");
+  } else if (activeTx === "void") {
+    appendLog("Result: APPROVED (VOID)");
+  } else if (activeTx === "auth") {
+    appendLog("Result: APPROVED (AUTH ONLY)");
+  } else {
+    appendLog("Result: APPROVED (SALE)");
+  }
+
   appendLog(`Auth Code: ${authCode}`);
-  appendLog(`Reference: ${referenceNo}`);
+  appendLog(`Reference #: ${refToUse}`);
+  lastReferenceNo = refToUse;
+  fields.referenceNo.value = refToUse;
 });

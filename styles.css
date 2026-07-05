@@ -4,107 +4,207 @@
 
 body {
   margin: 0;
-  font-family: Inter, Arial, sans-serif;
-  background: #0f172a;
-  color: #e2e8f0;
+  font-family: Arial, sans-serif;
+  background: #f2f4f7;
+  color: #1a2430;
 }
 
-.layout {
-  min-height: 100vh;
+.topbar {
+  background: #071733;
+  color: #f4f7fb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 26px;
+  border-bottom: 1px solid #1f2e4b;
+}
+
+.brand-line {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.brand-line h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.brand-line span {
+  color: #8fa4bf;
+  font-size: 14px;
+}
+
+.mode-line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+}
+
+.mode-line strong {
+  color: #28cc7d;
+}
+
+.prod-switch {
+  border: 1px solid #3f587f;
+  background: #0f2346;
+  color: #f4f7fb;
+  padding: 9px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.main-tabs {
+  display: flex;
+  border-bottom: 1px solid #c2c9d2;
+  padding: 10px 18px 0;
+  gap: 0;
+  background: #f2f4f7;
+}
+
+.main-tab {
+  border: 1px solid #c2c9d2;
+  border-bottom: 0;
+  padding: 11px 22px;
+  background: #e7ecf2;
+  color: #5a6880;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.main-tab.active {
+  background: #ffffff;
+  color: #1f2a3b;
+}
+
+.content {
   display: grid;
-  grid-template-columns: minmax(320px, 520px) minmax(320px, 1fr);
-  gap: 1.25rem;
-  padding: 1.25rem;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 10px;
+  padding: 10px 18px 18px;
 }
 
-.card,
-.logs {
-  background: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 12px;
-  padding: 1rem;
+.panel {
+  border: 1px solid #d6dce5;
+  background: #f8fafc;
+  padding: 12px;
+  min-height: 600px;
 }
 
-.card-header h1 {
-  margin: 0 0 0.4rem;
-  font-size: 1.4rem;
+.tx-tabs {
+  display: flex;
+  border: 1px solid #bac4d2;
+  border-bottom: 0;
+  width: fit-content;
 }
 
-.card-header p {
-  margin: 0 0 1rem;
-  color: #94a3b8;
+.tx-tab {
+  border: 0;
+  border-right: 1px solid #bac4d2;
+  background: #dce3ec;
+  color: #4c5d77;
+  font-weight: 700;
+  padding: 10px 24px;
+  cursor: pointer;
+}
+
+.tx-tab:last-child {
+  border-right: 0;
+}
+
+.tx-tab.active {
+  background: #ffffff;
+  color: #1f2a3b;
 }
 
 form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
+  border: 1px solid #bac4d2;
+  background: #ffffff;
+  padding: 14px 14px 20px;
 }
 
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+form h2 {
+  margin: 0 0 16px;
+  font-size: 30px;
 }
 
-.row.split {
+.field {
+  margin-bottom: 14px;
+}
+
+.field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.9rem;
+  gap: 12px;
 }
 
 label {
-  font-size: 0.84rem;
-  color: #cbd5e1;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 19px;
+  color: #51617b;
 }
 
 input {
   width: 100%;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  background: #0b1222;
-  color: #f8fafc;
-  padding: 0.7rem;
+  padding: 10px;
+  border: 1px solid #6f7d90;
+  font-size: 20px;
+  background: #fff;
 }
 
-input:focus {
-  outline: 2px solid #2563eb;
-  border-color: #2563eb;
-}
-
-button {
+#runButton {
+  width: 100%;
   border: 0;
-  border-radius: 8px;
-  padding: 0.75rem;
-  font-weight: 700;
+  background: #1ca3dd;
   color: #fff;
-  background: #1d4ed8;
+  font-weight: 700;
+  padding: 12px;
+  font-size: 26px;
   cursor: pointer;
 }
 
-button:hover {
-  background: #1e40af;
+#runButton:hover {
+  background: #1588b8;
 }
 
-.logs h2 {
-  margin-top: 0;
-  font-size: 1.1rem;
+.result-panel h2 {
+  margin: 0 0 10px;
+  font-size: 32px;
 }
 
 pre {
+  border: 1px solid #e1e6ee;
+  background: #f4f7fb;
   margin: 0;
-  border-radius: 8px;
-  border: 1px solid #334155;
-  background: #020617;
-  color: #22c55e;
-  min-height: 520px;
-  padding: 0.8rem;
-  overflow: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+  min-height: 540px;
+  padding: 14px;
+  color: #6f7f92;
+  font-size: 18px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-@media (max-width: 900px) {
-  .layout {
+@media (max-width: 1100px) {
+  .content {
     grid-template-columns: 1fr;
+  }
+
+  .brand-line h1 {
+    font-size: 24px;
+  }
+
+  form h2,
+  .result-panel h2 {
+    font-size: 22px;
+  }
+
+  label,
+  input,
+  #runButton,
+  pre {
+    font-size: 16px;
   }
 }

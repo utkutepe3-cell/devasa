@@ -7,77 +7,83 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="layout">
-      <section class="card">
-        <header class="card-header">
-          <h1>TSYS Virtual Terminal</h1>
-          <p>Ödeme bilgilerini girerek işlemi başlatın.</p>
-        </header>
+    <header class="topbar">
+      <div class="brand-line">
+        <h1>TSYS Virtual Terminal</h1>
+        <span>- Internet Service Provider</span>
+      </div>
+      <div class="mode-line">
+        <button class="prod-switch" type="button">Switch to Production</button>
+        <strong>TEST MODE (sandbox)</strong>
+      </div>
+    </header>
+
+    <nav class="main-tabs">
+      <button class="main-tab active" type="button">Virtual Terminal</button>
+      <button class="main-tab" type="button">Transactions</button>
+      <button class="main-tab" type="button">Dashboard</button>
+      <button class="main-tab" type="button">Settings</button>
+    </nav>
+
+    <main class="content">
+      <section class="panel">
+        <div class="tx-tabs">
+          <button class="tx-tab active" data-tx="charge" type="button">Charge</button>
+          <button class="tx-tab" data-tx="auth" type="button">Auth</button>
+          <button class="tx-tab" data-tx="void" type="button">Void</button>
+          <button class="tx-tab" data-tx="return" type="button">Return</button>
+        </div>
 
         <form id="payment-form" novalidate>
-          <div class="row">
-            <label for="merchantId">Merchant ID</label>
-            <input id="merchantId" name="merchantId" placeholder="123456" required />
+          <h2 id="form-title">Charge (Sale)</h2>
+
+          <div class="field">
+            <label for="cardNumber">Card number</label>
+            <input id="cardNumber" name="cardNumber" inputmode="numeric" maxlength="19" required />
           </div>
 
-          <div class="row">
-            <label for="terminalId">Terminal ID</label>
-            <input id="terminalId" name="terminalId" placeholder="654321" required />
-          </div>
-
-          <div class="row">
-            <label for="cardNumber">Kart Numarası</label>
-            <input
-              id="cardNumber"
-              name="cardNumber"
-              inputmode="numeric"
-              maxlength="19"
-              placeholder="4111 1111 1111 1111"
-              required
-            />
-          </div>
-
-          <div class="row split">
-            <div>
-              <label for="expiry">Son Kullanma (AA/YY)</label>
-              <input id="expiry" name="expiry" maxlength="5" placeholder="12/28" required />
+          <div class="field-row">
+            <div class="field">
+              <label for="expiry">Expiration (MMYY)</label>
+              <input id="expiry" name="expiry" maxlength="5" placeholder="1228" required />
             </div>
-            <div>
+            <div class="field">
               <label for="cvv">CVV</label>
-              <input
-                id="cvv"
-                name="cvv"
-                inputmode="numeric"
-                maxlength="4"
-                placeholder="123"
-                required
-              />
+              <input id="cvv" name="cvv" inputmode="numeric" maxlength="4" required />
             </div>
           </div>
 
-          <div class="row">
-            <label for="amount">Tutar (TRY)</label>
-            <input
-              id="amount"
-              name="amount"
-              inputmode="decimal"
-              placeholder="250.00"
-              required
-            />
+          <div class="field-row">
+            <div class="field">
+              <label for="amount">Amount (USD)</label>
+              <input id="amount" name="amount" inputmode="decimal" placeholder="100.00" required />
+            </div>
+            <div class="field">
+              <label for="zipCode">Billing ZIP</label>
+              <input id="zipCode" name="zipCode" maxlength="10" />
+            </div>
           </div>
 
-          <div class="row">
-            <label for="orderId">Sipariş No</label>
-            <input id="orderId" name="orderId" placeholder="ORD-1001" required />
+          <div class="field">
+            <label for="invoice">Invoice # (optional)</label>
+            <input id="invoice" name="invoice" maxlength="24" placeholder="INV-1001" />
           </div>
 
-          <button id="payButton" type="submit">Ödemeyi İşle</button>
+          <div class="field">
+            <label for="referenceNo">Original Ref # (Void / Return için)</label>
+            <input id="referenceNo" name="referenceNo" maxlength="32" placeholder="TSYS-..." />
+          </div>
+
+          <button id="runButton" type="submit">Run Charge</button>
         </form>
       </section>
 
-      <section class="logs">
-        <h2>İşlem Çıktısı</h2>
-        <pre id="output">Hazır...</pre>
+      <section class="panel result-panel">
+        <h2>Transaction Result</h2>
+        <pre id="output">No transaction yet.
+
+Run a Charge, Auth, Void or Return to see the
+full host response and codes here.</pre>
       </section>
     </main>
 
