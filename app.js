@@ -5,6 +5,10 @@ const runButton = document.getElementById("runButton");
 const txTabs = Array.from(document.querySelectorAll(".tx-tab"));
 
 const fields = {
+  merchantNumber: document.getElementById("merchantNumber"),
+  terminalNumber: document.getElementById("terminalNumber"),
+  storeNumber: document.getElementById("storeNumber"),
+  locationNumber: document.getElementById("locationNumber"),
   cardNumber: document.getElementById("cardNumber"),
   expiry: document.getElementById("expiry"),
   cvv: document.getElementById("cvv"),
@@ -68,6 +72,8 @@ const validate = () => {
   const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
   const referenceValue = fields.referenceNo.value.trim();
 
+  if (!fields.merchantNumber.value.trim()) errors.push("Merchant Number is required.");
+  if (!fields.terminalNumber.value.trim()) errors.push("Terminal Number is required.");
   if (!isLuhnValid(fields.cardNumber.value)) errors.push("Card number is invalid.");
   if (!expiryRegex.test(fields.expiry.value)) errors.push("Expiration must be MM/YY.");
   if (!/^\d{3,4}$/.test(fields.cvv.value)) errors.push("CVV must be 3 or 4 digits.");
@@ -118,6 +124,10 @@ form.addEventListener("submit", async (event) => {
   const authCode = Math.floor(100000 + Math.random() * 900000);
 
   await simulate(`Host Command: ${txMeta[activeTx].host}`);
+  await simulate(`Merchant #: ${fields.merchantNumber.value.trim()}`);
+  await simulate(`Terminal #: ${fields.terminalNumber.value.trim()}`);
+  await simulate(`Store #: ${fields.storeNumber.value.trim() || "-"}`);
+  await simulate(`Location #: ${fields.locationNumber.value.trim() || "-"}`);
   await simulate(`Card: ${maskedCard}`);
   await simulate(`Amount: ${amount} USD`);
   await simulate(`Invoice: ${fields.invoice.value.trim() || "-"}`);
