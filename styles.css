@@ -1,0 +1,110 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) minmax(320px, 1fr);
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.card,
+.logs {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.card-header h1 {
+  margin: 0 0 0.4rem;
+  font-size: 1.4rem;
+}
+
+.card-header p {
+  margin: 0 0 1rem;
+  color: #94a3b8;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.row.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+label {
+  font-size: 0.84rem;
+  color: #cbd5e1;
+}
+
+input {
+  width: 100%;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0b1222;
+  color: #f8fafc;
+  padding: 0.7rem;
+}
+
+input:focus {
+  outline: 2px solid #2563eb;
+  border-color: #2563eb;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  background: #1d4ed8;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1e40af;
+}
+
+.logs h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+pre {
+  margin: 0;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #020617;
+  color: #22c55e;
+  min-height: 520px;
+  padding: 0.8rem;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

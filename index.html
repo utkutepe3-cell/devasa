@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TSYS Virtual Terminal</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="card">
+        <header class="card-header">
+          <h1>TSYS Virtual Terminal</h1>
+          <p>Ödeme bilgilerini girerek işlemi başlatın.</p>
+        </header>
+
+        <form id="payment-form" novalidate>
+          <div class="row">
+            <label for="merchantId">Merchant ID</label>
+            <input id="merchantId" name="merchantId" placeholder="123456" required />
+          </div>
+
+          <div class="row">
+            <label for="terminalId">Terminal ID</label>
+            <input id="terminalId" name="terminalId" placeholder="654321" required />
+          </div>
+
+          <div class="row">
+            <label for="cardNumber">Kart Numarası</label>
+            <input
+              id="cardNumber"
+              name="cardNumber"
+              inputmode="numeric"
+              maxlength="19"
+              placeholder="4111 1111 1111 1111"
+              required
+            />
+          </div>
+
+          <div class="row split">
+            <div>
+              <label for="expiry">Son Kullanma (AA/YY)</label>
+              <input id="expiry" name="expiry" maxlength="5" placeholder="12/28" required />
+            </div>
+            <div>
+              <label for="cvv">CVV</label>
+              <input
+                id="cvv"
+                name="cvv"
+                inputmode="numeric"
+                maxlength="4"
+                placeholder="123"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="amount">Tutar (TRY)</label>
+            <input
+              id="amount"
+              name="amount"
+              inputmode="decimal"
+              placeholder="250.00"
+              required
+            />
+          </div>
+
+          <div class="row">
+            <label for="orderId">Sipariş No</label>
+            <input id="orderId" name="orderId" placeholder="ORD-1001" required />
+          </div>
+
+          <button id="payButton" type="submit">Ödemeyi İşle</button>
+        </form>
+      </section>
+
+      <section class="logs">
+        <h2>İşlem Çıktısı</h2>
+        <pre id="output">Hazır...</pre>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
