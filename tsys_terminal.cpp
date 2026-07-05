@@ -13,12 +13,52 @@ struct Transaction {
   std::string reference;
   std::string maskedCard;
   std::string authCode;
-  std::string merchantId;
-  std::string terminalId;
+  std::string merchantNumber;
+  std::string terminalNumber;
+  std::string storeNumber;
+  std::string locationNumber;
+  std::string dba;
   double amount{};
   std::string status;
   std::string parentReference;
 };
+
+struct MerchantProfile {
+  std::string dba;
+  std::string streetAddress;
+  std::string city;
+  std::string state;
+  std::string zip;
+  std::string customerServicePhone;
+  std::string merchantNumber;
+  std::string vNumber;
+  std::string mcc;
+  std::string bin;
+  std::string chain;
+  std::string agentBank;
+  std::string storeNumber;
+  std::string terminalNumber;
+  std::string locationNumber;
+};
+
+static MerchantProfile defaultMerchantProfile() {
+  return MerchantProfile{
+      "Get Your Life Back LLC",
+      "28 Tindall Rd",
+      "Middletown",
+      "New Jersey",
+      "07748",
+      "+1 800-993-0929",
+      "401151759710",
+      "V6298237",
+      "5499",
+      "494306",
+      "031776",
+      "031776",
+      "0001",
+      "7000",
+      "00001"};
+}
 
 static std::string onlyDigits(const std::string &value) {
   std::string result;
@@ -108,6 +148,7 @@ static void printHeader() {
   std::cout << "4) Return (Iade)\n";
   std::cout << "5) List Transactions\n";
   std::cout << "6) Update POS Settings\n";
+  std::cout << "7) Show Merchant Profile\n";
   std::cout << "0) Exit\n";
   std::cout << "-------------------------------------------\n";
 }
@@ -118,18 +159,38 @@ static bool readLine(const std::string &prompt, std::string &value) {
   return !std::cin.fail();
 }
 
-static bool readPosSettings(std::string &merchantId, std::string &terminalId) {
-  if (!readLine("Merchant ID: ", merchantId)) {
+static bool readPosSettings(std::string &merchantNumber, std::string &terminalNumber) {
+  if (!readLine("Merchant Number: ", merchantNumber)) {
     return false;
   }
-  if (!readLine("Terminal ID: ", terminalId)) {
+  if (!readLine("Terminal Number: ", terminalNumber)) {
     return false;
   }
-  if (merchantId.empty() || terminalId.empty()) {
-    std::cout << "Hata: Merchant ID ve Terminal ID bos olamaz.\n";
+  if (merchantNumber.empty() || terminalNumber.empty()) {
+    std::cout << "Hata: Merchant Number ve Terminal Number bos olamaz.\n";
     return false;
   }
   return true;
+}
+
+static void printMerchantProfile(const MerchantProfile &profile) {
+  std::cout << "\n=== Merchant Profile ===\n";
+  std::cout << "DBA: " << profile.dba << "\n";
+  std::cout << "Street address: " << profile.streetAddress << "\n";
+  std::cout << "City: " << profile.city << "\n";
+  std::cout << "State: " << profile.state << "\n";
+  std::cout << "ZIP: " << profile.zip << "\n";
+  std::cout << "Customer service phone: " << profile.customerServicePhone << "\n";
+  std::cout << "Merchant number: " << profile.merchantNumber << "\n";
+  std::cout << "V Number: " << profile.vNumber << "\n";
+  std::cout << "MCC: " << profile.mcc << "\n";
+  std::cout << "BIN: " << profile.bin << "\n";
+  std::cout << "Chain: " << profile.chain << "\n";
+  std::cout << "Agent Bank: " << profile.agentBank << "\n";
+  std::cout << "Store Number: " << profile.storeNumber << "\n";
+  std::cout << "Terminal Number: " << profile.terminalNumber << "\n";
+  std::cout << "Location Number: " << profile.locationNumber << "\n";
+  std::cout << "========================\n";
 }
 
 static bool readAmount(double &amount) {
@@ -179,8 +240,11 @@ static bool readCardInputs(std::string &card, std::string &expiry, std::string &
 static void printTransaction(const Transaction &tx) {
   std::cout << "Type: " << tx.type << "\n";
   std::cout << "Status: " << tx.status << "\n";
-  std::cout << "Merchant ID: " << tx.merchantId << "\n";
-  std::cout << "Terminal ID: " << tx.terminalId << "\n";
+  std::cout << "DBA: " << tx.dba << "\n";
+  std::cout << "Merchant Number: " << tx.merchantNumber << "\n";
+  std::cout << "Terminal Number: " << tx.terminalNumber << "\n";
+  std::cout << "Store Number: " << tx.storeNumber << "\n";
+  std::cout << "Location Number: " << tx.locationNumber << "\n";
   std::cout << "Reference: " << tx.reference << "\n";
   if (!tx.parentReference.empty()) {
     std::cout << "Parent Ref: " << tx.parentReference << "\n";
@@ -193,20 +257,13 @@ static void printTransaction(const Transaction &tx) {
 int main() {
   std::map<std::string, Transaction> transactions;
   std::string lastPrimaryReference;
-  std::string merchantId;
-  std::string terminalId;
-
-  std::cout << "POS bilgilerini girin:\n";
-  while (!readPosSettings(merchantId, terminalId)) {
-    if (std::cin.fail()) {
-      return 1;
-    }
-    std::cout << "Tekrar deneyin.\n";
-  }
+  MerchantProfile profile = defaultMerchantProfile();
 
   while (true) {
     printHeader();
-    std::cout << "Aktif Merchant ID: " << merchantId << " | Terminal ID: " << terminalId << "\n";
+    std::cout << "DBA: " << profile.dba << "\n";
+    std::cout << "Aktif Merchant Number: " << profile.merchantNumber
+              << " | Terminal Number: " << profile.terminalNumber << "\n";
     std::cout << "Select action: ";
     int action = -1;
     if (!(std::cin >> action)) {
@@ -231,8 +288,11 @@ int main() {
       tx.status = "APPROVED";
       tx.reference = generateReference();
       tx.authCode = generateAuthCode();
-      tx.merchantId = merchantId;
-      tx.terminalId = terminalId;
+      tx.dba = profile.dba;
+      tx.merchantNumber = profile.merchantNumber;
+      tx.terminalNumber = profile.terminalNumber;
+      tx.storeNumber = profile.storeNumber;
+      tx.locationNumber = profile.locationNumber;
       tx.maskedCard = maskCard(card);
       tx.amount = amount;
       transactions[tx.reference] = tx;
@@ -275,8 +335,11 @@ int main() {
         tx.reference = generateReference();
         tx.parentReference = ref;
         tx.authCode = generateAuthCode();
-        tx.merchantId = merchantId;
-        tx.terminalId = terminalId;
+        tx.dba = profile.dba;
+        tx.merchantNumber = profile.merchantNumber;
+        tx.terminalNumber = profile.terminalNumber;
+        tx.storeNumber = profile.storeNumber;
+        tx.locationNumber = profile.locationNumber;
         tx.maskedCard = original->second.maskedCard;
         tx.amount = original->second.amount;
         transactions[tx.reference] = tx;
@@ -304,8 +367,11 @@ int main() {
       tx.reference = generateReference();
       tx.parentReference = ref;
       tx.authCode = generateAuthCode();
-      tx.merchantId = merchantId;
-      tx.terminalId = terminalId;
+      tx.dba = profile.dba;
+      tx.merchantNumber = profile.merchantNumber;
+      tx.terminalNumber = profile.terminalNumber;
+      tx.storeNumber = profile.storeNumber;
+      tx.locationNumber = profile.locationNumber;
       tx.maskedCard = original->second.maskedCard;
       tx.amount = returnAmount;
       transactions[tx.reference] = tx;
@@ -332,11 +398,16 @@ int main() {
 
     if (action == 6) {
       std::cout << "\nPOS ayarlari guncelleniyor.\n";
-      if (!readPosSettings(merchantId, terminalId)) {
+      if (!readPosSettings(profile.merchantNumber, profile.terminalNumber)) {
         std::cout << "Hata: POS ayarlari guncellenemedi.\n";
         continue;
       }
       std::cout << "POS ayarlari kaydedildi.\n";
+      continue;
+    }
+
+    if (action == 7) {
+      printMerchantProfile(profile);
       continue;
     }
 

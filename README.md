@@ -33,6 +33,8 @@ Uygulama terminal üzerinden çalışır ve şu işlemleri destekler:
 - Return / Iade (orijinal reference ile)
 - İşlem listeleme
 - Merchant ID / Terminal ID girme ve sonradan güncelleme
+- Kod içinde sabit merchant profili (DBA, adres, MCC, BIN, Store/Terminal/Location, vb.)
+- Menüden `7) Show Merchant Profile` ile profil görüntüleme
 
 Not: Void/Return için `Original Reference #` alanına `LAST` yazarak son Charge/Auth işlemini otomatik kullanabilirsiniz.
 
