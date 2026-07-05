@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TSYS Virtual Terminal</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand-line">
+        <h1>TSYS Virtual Terminal</h1>
+        <span>- Internet Service Provider</span>
+      </div>
+      <div class="mode-line">
+        <button class="prod-switch" type="button">Switch to Production</button>
+        <strong>TEST MODE (sandbox)</strong>
+      </div>
+    </header>
+
+    <nav class="main-tabs">
+      <button class="main-tab active" type="button">Virtual Terminal</button>
+      <button class="main-tab" type="button">Transactions</button>
+      <button class="main-tab" type="button">Dashboard</button>
+      <button class="main-tab" type="button">Settings</button>
+    </nav>
+
+    <main class="content">
+      <section class="panel">
+        <section class="merchant-profile">
+          <h2>Merchant Profile</h2>
+          <div class="profile-grid">
+            <p><strong>DBA:</strong> Get Your Life Back LLC</p>
+            <p><strong>Street:</strong> 28 Tindall Rd</p>
+            <p><strong>City:</strong> Middletown</p>
+            <p><strong>State:</strong> New Jersey</p>
+            <p><strong>ZIP:</strong> 07748</p>
+            <p><strong>Phone:</strong> +1 800-993-0929</p>
+            <p><strong>Merchant #:</strong> 401151759710</p>
+            <p><strong>V Number:</strong> V6298237</p>
+            <p><strong>MCC:</strong> 5499</p>
+            <p><strong>BIN:</strong> 494306</p>
+            <p><strong>Chain:</strong> 031776</p>
+            <p><strong>Agent Bank:</strong> 031776</p>
+            <p><strong>Store #:</strong> 0001</p>
+            <p><strong>Terminal #:</strong> 7000</p>
+            <p><strong>Location #:</strong> 00001</p>
+          </div>
+        </section>
+
+        <div class="tx-tabs">
+          <button class="tx-tab active" data-tx="charge" type="button">Charge</button>
+          <button class="tx-tab" data-tx="auth" type="button">Auth</button>
+          <button class="tx-tab" data-tx="void" type="button">Void</button>
+          <button class="tx-tab" data-tx="return" type="button">Return</button>
+        </div>
+
+        <form id="payment-form" novalidate>
+          <h2 id="form-title">Charge (Sale)</h2>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="merchantNumber">Merchant Number</label>
+              <input id="merchantNumber" name="merchantNumber" value="401151759710" required />
+            </div>
+            <div class="field">
+              <label for="terminalNumber">Terminal Number</label>
+              <input id="terminalNumber" name="terminalNumber" value="7000" required />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="storeNumber">Store Number</label>
+              <input id="storeNumber" name="storeNumber" value="0001" />
+            </div>
+            <div class="field">
+              <label for="locationNumber">Location Number</label>
+              <input id="locationNumber" name="locationNumber" value="00001" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="cardNumber">Card number</label>
+            <input id="cardNumber" name="cardNumber" inputmode="numeric" maxlength="19" required />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="expiry">Expiration (MMYY)</label>
+              <input id="expiry" name="expiry" maxlength="5" placeholder="1228" required />
+            </div>
+            <div class="field">
+              <label for="cvv">CVV</label>
+              <input id="cvv" name="cvv" inputmode="numeric" maxlength="4" required />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="amount">Amount (USD)</label>
+              <input id="amount" name="amount" inputmode="decimal" placeholder="100.00" required />
+            </div>
+            <div class="field">
+              <label for="zipCode">Billing ZIP</label>
+              <input id="zipCode" name="zipCode" maxlength="10" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="invoice">Invoice # (optional)</label>
+            <input id="invoice" name="invoice" maxlength="24" placeholder="INV-1001" />
+          </div>
+
+          <div class="field">
+            <label for="referenceNo">Original Ref # (Void / Return için)</label>
+            <input id="referenceNo" name="referenceNo" maxlength="32" placeholder="TSYS-..." />
+          </div>
+
+          <button id="runButton" type="submit">Run Charge</button>
+        </form>
+      </section>
+
+      <section class="panel result-panel">
+        <h2>Transaction Result</h2>
+        <pre id="output">No transaction yet.
+
+Run a Charge, Auth, Void or Return to see the
+full host response and codes here.</pre>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
