@@ -32,6 +32,7 @@ Uygulama terminal üzerinden çalışır ve şu işlemleri destekler:
 - Void (orijinal reference ile)
 - Return / Iade (orijinal reference ile)
 - İşlem listeleme
+- Merchant ID / Terminal ID girme ve sonradan güncelleme
 
 Not: Void/Return için `Original Reference #` alanına `LAST` yazarak son Charge/Auth işlemini otomatik kullanabilirsiniz.
 

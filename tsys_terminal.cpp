@@ -13,6 +13,8 @@ struct Transaction {
   std::string reference;
   std::string maskedCard;
   std::string authCode;
+  std::string merchantId;
+  std::string terminalId;
   double amount{};
   std::string status;
   std::string parentReference;
@@ -105,6 +107,7 @@ static void printHeader() {
   std::cout << "3) Void\n";
   std::cout << "4) Return (Iade)\n";
   std::cout << "5) List Transactions\n";
+  std::cout << "6) Update POS Settings\n";
   std::cout << "0) Exit\n";
   std::cout << "-------------------------------------------\n";
 }
@@ -113,6 +116,20 @@ static bool readLine(const std::string &prompt, std::string &value) {
   std::cout << prompt;
   std::getline(std::cin, value);
   return !std::cin.fail();
+}
+
+static bool readPosSettings(std::string &merchantId, std::string &terminalId) {
+  if (!readLine("Merchant ID: ", merchantId)) {
+    return false;
+  }
+  if (!readLine("Terminal ID: ", terminalId)) {
+    return false;
+  }
+  if (merchantId.empty() || terminalId.empty()) {
+    std::cout << "Hata: Merchant ID ve Terminal ID bos olamaz.\n";
+    return false;
+  }
+  return true;
 }
 
 static bool readAmount(double &amount) {
@@ -162,6 +179,8 @@ static bool readCardInputs(std::string &card, std::string &expiry, std::string &
 static void printTransaction(const Transaction &tx) {
   std::cout << "Type: " << tx.type << "\n";
   std::cout << "Status: " << tx.status << "\n";
+  std::cout << "Merchant ID: " << tx.merchantId << "\n";
+  std::cout << "Terminal ID: " << tx.terminalId << "\n";
   std::cout << "Reference: " << tx.reference << "\n";
   if (!tx.parentReference.empty()) {
     std::cout << "Parent Ref: " << tx.parentReference << "\n";
@@ -174,9 +193,20 @@ static void printTransaction(const Transaction &tx) {
 int main() {
   std::map<std::string, Transaction> transactions;
   std::string lastPrimaryReference;
+  std::string merchantId;
+  std::string terminalId;
+
+  std::cout << "POS bilgilerini girin:\n";
+  while (!readPosSettings(merchantId, terminalId)) {
+    if (std::cin.fail()) {
+      return 1;
+    }
+    std::cout << "Tekrar deneyin.\n";
+  }
 
   while (true) {
     printHeader();
+    std::cout << "Aktif Merchant ID: " << merchantId << " | Terminal ID: " << terminalId << "\n";
     std::cout << "Select action: ";
     int action = -1;
     if (!(std::cin >> action)) {
@@ -201,6 +231,8 @@ int main() {
       tx.status = "APPROVED";
       tx.reference = generateReference();
       tx.authCode = generateAuthCode();
+      tx.merchantId = merchantId;
+      tx.terminalId = terminalId;
       tx.maskedCard = maskCard(card);
       tx.amount = amount;
       transactions[tx.reference] = tx;
@@ -243,6 +275,8 @@ int main() {
         tx.reference = generateReference();
         tx.parentReference = ref;
         tx.authCode = generateAuthCode();
+        tx.merchantId = merchantId;
+        tx.terminalId = terminalId;
         tx.maskedCard = original->second.maskedCard;
         tx.amount = original->second.amount;
         transactions[tx.reference] = tx;
@@ -270,6 +304,8 @@ int main() {
       tx.reference = generateReference();
       tx.parentReference = ref;
       tx.authCode = generateAuthCode();
+      tx.merchantId = merchantId;
+      tx.terminalId = terminalId;
       tx.maskedCard = original->second.maskedCard;
       tx.amount = returnAmount;
       transactions[tx.reference] = tx;
@@ -291,6 +327,16 @@ int main() {
         printTransaction(entry.second);
       }
       std::cout << "====================\n";
+      continue;
+    }
+
+    if (action == 6) {
+      std::cout << "\nPOS ayarlari guncelleniyor.\n";
+      if (!readPosSettings(merchantId, terminalId)) {
+        std::cout << "Hata: POS ayarlari guncellenemedi.\n";
+        continue;
+      }
+      std::cout << "POS ayarlari kaydedildi.\n";
       continue;
     }
 
