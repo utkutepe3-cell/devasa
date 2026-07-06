@@ -132,6 +132,9 @@ function requestToGateway(string $url, array $payload, string $apiKey): array
 }
 
 loadEnv(__DIR__ . '/.env');
+if (!is_file(__DIR__ . '/.env')) {
+    loadEnv(__DIR__ . '/.env.example');
+}
 
 $config = [
     // Merchant defaults are pre-filled from your provided profile.
@@ -157,6 +160,17 @@ $merchantProfile = [
     'chain' => envValue('TSYS_CHAIN', '031776'),
     'agent_bank' => envValue('TSYS_AGENT_BANK', '031776'),
 ];
+
+// Final safety fallback: keep merchant identity populated even if env is missing.
+if ($config['merchant_number'] === '' || $config['merchant_number'] === null) {
+    $config['merchant_number'] = '401151759710';
+}
+if ($config['v_number'] === '' || $config['v_number'] === null) {
+    $config['v_number'] = 'V6298237';
+}
+if ($merchantProfile['dba'] === '' || $merchantProfile['dba'] === null) {
+    $merchantProfile['dba'] = 'Get Your Life Back LLC';
+}
 
 $errors = [];
 $result = null;
@@ -225,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $effectiveConfig['api_url'] = $input['api_url'];
     $effectiveConfig['api_key'] = $input['api_key'];
 
-    foreach (['api_url', 'api_key', 'merchant_number', 'v_number'] as $required) {
+    foreach (['api_url', 'api_key'] as $required) {
         if (($effectiveConfig[$required] ?? '') === '') {
             $errors[] = sprintf('Missing config: %s', $required);
         }
