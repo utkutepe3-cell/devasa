@@ -63,6 +63,36 @@ function isPlaceholderGatewayUrl(string $url): bool
     return str_contains($host, 'replace-with-your-tsys-endpoint.example.com');
 }
 
+function normalizeMerchantNumber(string $merchantNumber): string
+{
+    $digits = preg_replace('/\D+/', '', trim($merchantNumber)) ?? '';
+    if ($digits === '') {
+        return '';
+    }
+
+    return str_pad($digits, 12, '0', STR_PAD_LEFT);
+}
+
+function normalizeVitalNumber(string $vNumber): string
+{
+    $raw = strtoupper(trim($vNumber));
+    if ($raw === '') {
+        return '';
+    }
+
+    // Many TSYS/Vital setups require replacing leading V with 7.
+    if (preg_match('/^V(\d{7})$/', $raw, $m)) {
+        return '7' . $m[1];
+    }
+
+    $digits = preg_replace('/\D+/', '', $raw) ?? '';
+    if (strlen($digits) === 8) {
+        return $digits;
+    }
+
+    return $raw;
+}
+
 function normalizeAmount(string $amount): string
 {
     $amount = str_replace(',', '.', trim($amount));
@@ -108,15 +138,19 @@ function requestToGateway(string $url, array $payload, string $apiKey): array
 
     $json = json_encode($payload, JSON_THROW_ON_ERROR);
 
+    $headers = [
+        'Content-Type: application/json',
+        'Accept: application/json',
+    ];
+    if (trim($apiKey) !== '' && $apiKey !== 'replace-with-your-tsys-api-key') {
+        $headers[] = 'Authorization: Bearer ' . $apiKey;
+    }
+
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 45,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'Authorization: Bearer ' . $apiKey,
-        ],
+        CURLOPT_HTTPHEADER => $headers,
         CURLOPT_POSTFIELDS => $json,
     ]);
 
@@ -173,7 +207,7 @@ if (!is_file(__DIR__ . '/.env')) {
 
 $config = [
     // Merchant defaults are pre-filled from your provided profile.
-    'api_url' => envValue('TSYS_API_URL', 'https://replace-with-your-tsys-endpoint.example.com/transactions'),
+    'api_url' => envValue('TSYS_API_URL', 'https://ssl2.vitalps.net/scripts/gateway.dll?transact'),
     'api_key' => envValue('TSYS_API_KEY', 'replace-with-your-tsys-api-key'),
     'merchant_number' => envValue('TSYS_MERCHANT_NUMBER', '401151759710'),
     'v_number' => envValue('TSYS_V_NUMBER', 'V6298237'),
@@ -206,6 +240,8 @@ if ($config['v_number'] === '' || $config['v_number'] === null) {
 if ($merchantProfile['dba'] === '' || $merchantProfile['dba'] === null) {
     $merchantProfile['dba'] = 'Get Your Life Back LLC';
 }
+$config['merchant_number'] = normalizeMerchantNumber((string)$config['merchant_number']);
+$config['v_number'] = normalizeVitalNumber((string)$config['v_number']);
 
 $errors = [];
 $result = null;
@@ -278,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $effectiveConfig['gateway_mode'] = in_array($input['gateway_mode'], ['live', 'mock'], true) ? $input['gateway_mode'] : 'mock';
 
     if ($effectiveConfig['gateway_mode'] === 'live') {
-        foreach (['api_url', 'api_key'] as $required) {
+        foreach (['api_url'] as $required) {
             if (($effectiveConfig[$required] ?? '') === '') {
                 $errors[] = sprintf('Missing config: %s', $required);
             }
@@ -286,8 +322,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($effectiveConfig['api_url'] !== '' && isPlaceholderGatewayUrl($effectiveConfig['api_url'])) {
             $errors[] = 'TSYS API URL is still placeholder. Enter your real TSYS host URL.';
         }
-        if ($effectiveConfig['api_key'] === 'replace-with-your-tsys-api-key') {
-            $errors[] = 'TSYS API key is still placeholder. Enter your real API key.';
+        if (($effectiveConfig['merchant_number'] ?? '') === '' || strlen((string)$effectiveConfig['merchant_number']) !== 12) {
+            $errors[] = 'Merchant number must be 12 digits.';
+        }
+        if (($effectiveConfig['v_number'] ?? '') === '' || strlen((string)$effectiveConfig['v_number']) !== 8) {
+            $errors[] = 'V number must resolve to 8 digits (ex: V1234567 -> 71234567).';
         }
     }
     if ($input['transaction_type'] === 'return' && $input['original_transaction_id'] === '') {
@@ -420,8 +459,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input id="api_url" name="api_url" value="<?= esc((string)$defaults['api_url']) ?>" placeholder="https://.../transactions" required>
                 </div>
                 <div class="col">
-                    <label for="api_key">Gateway API Key</label>
-                    <input id="api_key" name="api_key" value="<?= esc((string)$defaults['api_key']) ?>" placeholder="API key" required>
+                    <label for="api_key">Gateway API Key (opsiyonel)</label>
+                    <input id="api_key" name="api_key" value="<?= esc((string)$defaults['api_key']) ?>" placeholder="API key (if required)">
                 </div>
             </div>
 
