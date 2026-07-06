@@ -123,6 +123,28 @@ function getInputPayload(): array
     return is_array($payload) ? $payload : [];
 }
 
+function removeNullAndEmpty(array $input): array
+{
+    $output = [];
+    foreach ($input as $key => $value) {
+        if (is_array($value)) {
+            $nested = removeNullAndEmpty($value);
+            if ($nested !== []) {
+                $output[$key] = $nested;
+            }
+            continue;
+        }
+        if ($value === null) {
+            continue;
+        }
+        if (is_string($value) && trim($value) === '') {
+            continue;
+        }
+        $output[$key] = $value;
+    }
+    return $output;
+}
+
 function validatePayload(array $payload): array
 {
     $txType = strtolower(trim((string) ($payload['txType'] ?? 'charge')));
@@ -170,12 +192,16 @@ function buildTsysRequest(string $txType, array $payload, array $config): array
     $merchantId = $config['merchant']['merchantNumber'] ?? '';
     $invoice = trim((string) ($payload['invoice'] ?? ''));
     $referenceNo = trim((string) ($payload['referenceNo'] ?? ''));
-    $baseBody = [
+    $formattedAmount = $amount !== '' ? (float) number_format((float) $amount, 2, '.', '') : null;
+
+    $method = 'POST';
+    $path = '/transactions/sale';
+    $body = removeNullAndEmpty([
         'merchantId' => $merchantId,
-        'amount' => $amount !== '' ? (float) number_format((float) $amount, 2, '.', '') : null,
+        'amount' => $formattedAmount,
         'currency' => 'USD',
-        'orderId' => $invoice !== '' ? $invoice : null,
-        'description' => 'TSYS Virtual Terminal ' . strtoupper($txType),
+        'orderId' => $invoice,
+        'description' => 'TSYS Virtual Terminal CHARGE',
         'card' => [
             'cardNumber' => normalizeDigits((string) ($payload['cardNumber'] ?? '')),
             'expirationDate' => $expiry ? ($expiry['month'] . substr($expiry['year'], -2)) : null,
@@ -185,24 +211,35 @@ function buildTsysRequest(string $txType, array $payload, array $config): array
                 'street' => $config['merchant']['streetAddress'] ?? '',
             ],
         ],
-    ];
-
-    $method = 'POST';
-    $path = '/transactions/sale';
-    $body = $baseBody;
+        'captureImmediately' => true,
+    ]);
     if ($txType === 'auth') {
         $path = '/transactions/authorize';
+        $body = removeNullAndEmpty([
+            'merchantId' => $merchantId,
+            'amount' => $formattedAmount,
+            'currency' => 'USD',
+            'orderId' => $invoice,
+            'description' => 'TSYS Virtual Terminal AUTH',
+            'card' => [
+                'cardNumber' => normalizeDigits((string) ($payload['cardNumber'] ?? '')),
+                'expirationDate' => $expiry ? ($expiry['month'] . substr($expiry['year'], -2)) : null,
+                'cvv' => normalizeDigits((string) ($payload['cvv'] ?? '')),
+                'billingAddress' => [
+                    'zip' => trim((string) ($payload['zipCode'] ?? '')),
+                    'street' => $config['merchant']['streetAddress'] ?? '',
+                ],
+            ],
+        ]);
     } elseif ($txType === 'void') {
         $path = '/transactions/' . rawurlencode($referenceNo) . '/void';
         $body = new stdClass();
     } elseif ($txType === 'return') {
         $path = '/transactions/' . rawurlencode($referenceNo) . '/refund';
-        $body = [
-            'amount' => $amount !== '' ? (float) number_format((float) $amount, 2, '.', '') : null,
+        $body = removeNullAndEmpty([
+            'amount' => $formattedAmount,
             'reason' => 'customer_request',
-        ];
-    } else {
-        $body['captureImmediately'] = true;
+        ]);
     }
 
     return [
