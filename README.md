@@ -13,4 +13,5 @@ use Devasa\Gateways\TsysVirtualTerminalGateway;
 
 $gateway = new TsysVirtualTerminalGateway();
 $info = $gateway->getGatewayInfo();
+$virtualTerminal = $gateway->createVirtualTerminal();
 ```

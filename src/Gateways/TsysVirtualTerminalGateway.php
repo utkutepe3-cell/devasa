@@ -83,8 +83,39 @@ final class TsysVirtualTerminalGateway
                 'EUR',
                 'GBP',
             ],
+            'status' => 'active',
+            'virtual_terminal_enabled' => true,
+            'return_refund_enabled' => true,
             'supports_3d_secure' => true,
             'supports_installment' => false,
+            'supports_refund' => true,
+        ];
+    }
+
+    /**
+     * Creates an active virtual terminal response payload.
+     */
+    public function createVirtualTerminal(): array
+    {
+        $gatewayInfo = $this->getGatewayInfo();
+
+        return [
+            'success' => true,
+            'message' => 'Virtual terminal created successfully.',
+            'virtual_terminal' => [
+                'id' => sprintf(
+                    'vt-%s-%s',
+                    $gatewayInfo['credentials']['terminal_id'],
+                    $gatewayInfo['merchant_profile']['location_number']
+                ),
+                'status' => 'active',
+                'return_refund_status' => 'active',
+                'merchant_number' => $gatewayInfo['merchant_profile']['merchant_number'],
+                'store_number' => $gatewayInfo['merchant_profile']['store_number'],
+                'terminal_number' => $gatewayInfo['merchant_profile']['terminal_number'],
+                'location_number' => $gatewayInfo['merchant_profile']['location_number'],
+                'supported_card_types' => $gatewayInfo['card_types_accepted'],
+            ],
         ];
     }
 }
