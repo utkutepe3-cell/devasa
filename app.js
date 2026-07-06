@@ -1,9 +1,12 @@
 const txTabs = [...document.querySelectorAll(".tx-tab")];
 const formTitle = document.getElementById("form-title");
 const txTypeInput = document.getElementById("txType");
+const environmentInput = document.getElementById("environment");
 const runButton = document.getElementById("runButton");
 const output = document.getElementById("output");
 const form = document.getElementById("payment-form");
+const prodSwitch = document.getElementById("prodSwitch");
+const modeLabel = document.getElementById("modeLabel");
 const cardNumberInput = document.getElementById("cardNumber");
 const expiryInput = document.getElementById("expiry");
 const cvvInput = document.getElementById("cvv");
@@ -54,6 +57,13 @@ function setTab(nextType) {
   referenceInput.required = needRef;
 }
 
+function refreshEnvironmentUi() {
+  const isProduction = environmentInput.value === "production";
+  modeLabel.textContent = isProduction ? "PRODUCTION MODE" : "TEST MODE (sandbox)";
+  prodSwitch.textContent = isProduction ? "Switch to Sandbox" : "Switch to Production";
+  prodSwitch.classList.toggle("is-production", isProduction);
+}
+
 txTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     clearErrors();
@@ -87,7 +97,10 @@ async function submitTransaction(event) {
 
   runButton.disabled = true;
   runButton.textContent = "Processing...";
-  output.textContent = "Sending request to TSYS Virtual Host...";
+  output.textContent =
+    environmentInput.value === "production"
+      ? "Sending request to TSYS production gateway..."
+      : "Sending request to TSYS sandbox gateway...";
 
   try {
     const response = await fetch("./index.php", {
@@ -123,4 +136,10 @@ async function submitTransaction(event) {
 }
 
 form.addEventListener("submit", submitTransaction);
+prodSwitch.addEventListener("click", () => {
+  environmentInput.value = environmentInput.value === "production" ? "sandbox" : "production";
+  refreshEnvironmentUi();
+});
+
 setTab("charge");
+refreshEnvironmentUi();

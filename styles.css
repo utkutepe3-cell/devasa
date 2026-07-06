@@ -81,6 +81,11 @@ body {
   border-color: var(--primary);
 }
 
+.prod-switch.is-production {
+  border-color: #f9be50;
+  background: linear-gradient(180deg, rgba(249, 190, 80, 0.2), rgba(249, 190, 80, 0.06));
+}
+
 .main-tabs {
   display: flex;
   gap: 0.5rem;

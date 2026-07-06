@@ -9,6 +9,12 @@ function jsonResponse(array $payload, int $statusCode = 200): void
     exit;
 }
 
+function envString(string $key, string $default = ''): string
+{
+    $value = getenv($key);
+    return is_string($value) && $value !== '' ? $value : $default;
+}
+
 function normalizeDigits(string $value): string
 {
     return preg_replace('/\D+/', '', $value) ?? '';
@@ -29,7 +35,6 @@ function isValidLuhn(string $cardNumber): bool
     if ($digits === '' || strlen($digits) < 12 || strlen($digits) > 19) {
         return false;
     }
-
     $sum = 0;
     $alt = false;
     for ($i = strlen($digits) - 1; $i >= 0; $i--) {
@@ -55,56 +60,79 @@ function parseExpiry(string $expiryRaw): ?array
     if (strlen($digits) !== 4) {
         return null;
     }
-
     $month = (int) substr($digits, 0, 2);
     $year = (int) substr($digits, 2, 2);
     if ($month < 1 || $month > 12) {
         return null;
     }
-
     $fullYear = 2000 + $year;
     $expDate = DateTimeImmutable::createFromFormat('Y-n-j H:i:s', $fullYear . '-' . $month . '-1 00:00:00');
     if (!$expDate) {
         return null;
     }
-
-    $lastDayOfMonth = $expDate->modify('last day of this month')->setTime(23, 59, 59);
-    if ($lastDayOfMonth < new DateTimeImmutable('now')) {
+    if ($expDate->modify('last day of this month')->setTime(23, 59, 59) < new DateTimeImmutable('now')) {
         return null;
     }
-
     return ['month' => str_pad((string) $month, 2, '0', STR_PAD_LEFT), 'year' => (string) $fullYear];
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+function getGatewayConfig(): array
+{
+    return [
+        'sandbox_url' => envString('TSYS_SANDBOX_URL', 'https://stagegw.transnox.com/servlets/transnox_api_server'),
+        'production_url' => envString('TSYS_PRODUCTION_URL', 'https://gw.transnox.com/servlets/transnox_api_server'),
+        'api_key' => envString('TSYS_API_KEY'),
+        'username' => envString('TSYS_API_USERNAME'),
+        'password' => envString('TSYS_API_PASSWORD'),
+        'timeout_seconds' => (int) envString('TSYS_TIMEOUT_SECONDS', '45'),
+        'enable_mock' => envString('TSYS_ENABLE_MOCK', '0') === '1',
+        'merchant' => [
+            'dba' => envString('TSYS_DBA_NAME', 'Get Your Life Back LLC'),
+            'streetAddress' => envString('TSYS_STREET_ADDRESS', '28 Tindall Rd'),
+            'city' => envString('TSYS_CITY', 'Middletown'),
+            'state' => envString('TSYS_STATE', 'New Jersey'),
+            'zip' => envString('TSYS_ZIP', '07748'),
+            'customerServicePhone' => envString('TSYS_CUSTOMER_SERVICE_PHONE', '+1 800-993-0929'),
+            'merchantNumber' => envString('TSYS_MERCHANT_NUMBER', '401151759710'),
+            'vNumber' => envString('TSYS_V_NUMBER', 'V6298237'),
+            'mcc' => envString('TSYS_MCC', '5499'),
+            'bin' => envString('TSYS_BIN', '494306'),
+            'chain' => envString('TSYS_CHAIN', '031776'),
+            'agentBank' => envString('TSYS_AGENT_BANK', '031776'),
+            'storeNumber' => envString('TSYS_STORE_NUMBER', '0001'),
+            'terminalNumber' => envString('TSYS_TERMINAL_NUMBER', '7000'),
+            'locationNumber' => envString('TSYS_LOCATION_NUMBER', '00001'),
+        ],
+    ];
+}
+
+function getInputPayload(): array
+{
     $rawInput = file_get_contents('php://input') ?: '';
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-    $payload = [];
-
     if (str_contains(strtolower($contentType), 'application/json')) {
         $decoded = json_decode($rawInput, true);
-        if (is_array($decoded)) {
-            $payload = $decoded;
-        }
-    } else {
-        $payload = $_POST;
-        if (!$payload && $rawInput !== '') {
-            parse_str($rawInput, $payload);
-        }
+        return is_array($decoded) ? $decoded : [];
     }
+    $payload = $_POST;
+    if (!$payload && $rawInput !== '') {
+        parse_str($rawInput, $payload);
+    }
+    return is_array($payload) ? $payload : [];
+}
 
+function validatePayload(array $payload): array
+{
     $txType = strtolower(trim((string) ($payload['txType'] ?? 'charge')));
     $allowedTxTypes = ['charge', 'auth', 'void', 'return'];
     if (!in_array($txType, $allowedTxTypes, true)) {
-        jsonResponse(['ok' => false, 'message' => 'Geçersiz işlem tipi.'], 422);
+        return ['_global' => 'Geçersiz işlem tipi.'];
     }
 
     $cardNumber = trim((string) ($payload['cardNumber'] ?? ''));
     $expiry = trim((string) ($payload['expiry'] ?? ''));
     $cvv = trim((string) ($payload['cvv'] ?? ''));
     $amountRaw = trim((string) ($payload['amount'] ?? ''));
-    $zipCode = trim((string) ($payload['zipCode'] ?? ''));
-    $invoice = trim((string) ($payload['invoice'] ?? ''));
     $referenceNo = trim((string) ($payload['referenceNo'] ?? ''));
     $errors = [];
 
@@ -115,8 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (parseExpiry($expiry) === null) {
             $errors['expiry'] = 'Son kullanma tarihi MMYY formatında ve geçerli olmalı.';
         }
-        $cvvDigits = normalizeDigits($cvv);
-        if (!preg_match('/^\d{3,4}$/', $cvvDigits)) {
+        if (!preg_match('/^\d{3,4}$/', normalizeDigits($cvv))) {
             $errors['cvv'] = 'CVV 3 veya 4 hane olmalı.';
         }
     }
@@ -131,62 +158,205 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['referenceNo'] = 'Void / Return için orijinal referans numarası zorunlu.';
     }
 
-    if ($errors !== []) {
-        jsonResponse([
-            'ok' => false,
-            'message' => 'Doğrulama hatası.',
-            'errors' => $errors,
-        ], 422);
+    return $errors;
+}
+
+function buildTsysRequest(string $txType, array $payload, array $config): array
+{
+    $expiry = parseExpiry((string) ($payload['expiry'] ?? ''));
+    $amount = trim((string) ($payload['amount'] ?? ''));
+    $operationMap = [
+        'charge' => 'SALE',
+        'auth' => 'AUTH',
+        'void' => 'VOID',
+        'return' => 'REFUND',
+    ];
+    return [
+        'transaction' => [
+            'operation' => $operationMap[$txType] ?? strtoupper($txType),
+            'amount' => $amount !== '' ? number_format((float) $amount, 2, '.', '') : null,
+            'currency' => 'USD',
+            'invoiceNumber' => trim((string) ($payload['invoice'] ?? '')),
+            'originalReference' => trim((string) ($payload['referenceNo'] ?? '')),
+            'card' => [
+                'number' => normalizeDigits((string) ($payload['cardNumber'] ?? '')),
+                'expirationMonth' => $expiry['month'] ?? null,
+                'expirationYear' => $expiry ? substr($expiry['year'], -2) : null,
+                'cvv' => normalizeDigits((string) ($payload['cvv'] ?? '')),
+            ],
+            'billing' => [
+                'zip' => trim((string) ($payload['zipCode'] ?? '')),
+            ],
+        ],
+        'merchant' => $config['merchant'],
+        'meta' => [
+            'source' => 'tsys-virtual-terminal-web',
+            'requestedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+        ],
+    ];
+}
+
+function callTsysGateway(string $environment, array $requestPayload, array $config): array
+{
+    $url = $environment === 'production' ? $config['production_url'] : $config['sandbox_url'];
+    if ($url === '') {
+        throw new RuntimeException('TSYS endpoint boş. TSYS_SANDBOX_URL / TSYS_PRODUCTION_URL tanımlayın.');
+    }
+    if (!function_exists('curl_init')) {
+        throw new RuntimeException('PHP cURL extension bulunamadı.');
     }
 
-    $amount = $amountRaw !== '' ? number_format((float) $amountRaw, 2, '.', '') : null;
-    $seed = implode('|', [
-        $txType,
-        normalizeDigits($cardNumber),
-        $amount ?? '0.00',
-        $referenceNo,
-        $invoice,
-        (new DateTimeImmutable())->format('YmdHi'),
-    ]);
-    $score = abs((int) crc32($seed)) % 100;
-    $approveThreshold = $txType === 'void' ? 94 : 85;
-    $approved = $score < $approveThreshold;
-
-    $declineMap = [
-        '051' => 'Yetersiz bakiye',
-        '054' => 'Kartın son kullanma tarihi geçmiş',
-        '091' => 'Issuer/host erişilemiyor',
-        '116' => 'Yetersiz fon',
+    $headers = [
+        'Content-Type: application/json',
+        'Accept: application/json',
     ];
-    $declineCodes = array_keys($declineMap);
-    $declineCode = $declineCodes[$score % count($declineCodes)];
-    $responseCode = $approved ? '000' : $declineCode;
-    $responseText = $approved ? 'APPROVED' : 'DECLINED - ' . $declineMap[$declineCode];
-    $avsOptions = ['Y', 'N', 'A', 'U'];
-    $cvvOptions = ['M', 'N', 'P', 'S'];
+    if ($config['api_key'] !== '') {
+        $headers[] = 'Authorization: Bearer ' . $config['api_key'];
+    }
 
-    jsonResponse([
+    $curl = curl_init($url);
+    if ($curl === false) {
+        throw new RuntimeException('cURL başlatılamadı.');
+    }
+
+    curl_setopt_array($curl, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_POSTFIELDS => json_encode($requestPayload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_CONNECTTIMEOUT => 15,
+        CURLOPT_TIMEOUT => max(15, (int) $config['timeout_seconds']),
+    ]);
+
+    if ($config['username'] !== '' || $config['password'] !== '') {
+        curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($curl, CURLOPT_USERPWD, $config['username'] . ':' . $config['password']);
+    }
+
+    $raw = curl_exec($curl);
+    $errorNo = curl_errno($curl);
+    $errorMessage = curl_error($curl);
+    $statusCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    if ($raw === false || $errorNo !== 0) {
+        throw new RuntimeException('Gateway bağlantı hatası: ' . $errorMessage);
+    }
+    if ($statusCode >= 400) {
+        throw new RuntimeException('Gateway HTTP hatası: ' . $statusCode);
+    }
+
+    $decoded = json_decode($raw, true);
+    if (is_array($decoded)) {
+        return $decoded;
+    }
+    return ['rawResponse' => $raw];
+}
+
+function firstValue(array $source, array $keys): mixed
+{
+    foreach ($keys as $key) {
+        if (array_key_exists($key, $source) && $source[$key] !== '' && $source[$key] !== null) {
+            return $source[$key];
+        }
+    }
+    return null;
+}
+
+function normalizeGatewayResponse(array $gatewayResponse, string $txType, array $requestPayload, string $environment): array
+{
+    $flat = $gatewayResponse;
+    if (isset($gatewayResponse['transaction']) && is_array($gatewayResponse['transaction'])) {
+        $flat = array_merge($flat, $gatewayResponse['transaction']);
+    }
+
+    $responseCode = (string) (firstValue($flat, ['responseCode', 'respCode', 'statusCode', 'code']) ?? 'UNKNOWN');
+    $responseText = (string) (firstValue($flat, ['responseText', 'message', 'statusMessage', 'description']) ?? 'Unknown response');
+    $approvedCodes = ['0', '00', '000', 'APPROVED', 'A'];
+    $approved = in_array(strtoupper(trim($responseCode)), $approvedCodes, true)
+        || str_contains(strtoupper($responseText), 'APPROV');
+
+    return [
         'ok' => true,
         'transaction' => [
             'type' => strtoupper($txType),
             'status' => $approved ? 'approved' : 'declined',
             'responseCode' => $responseCode,
             'responseText' => $responseText,
+            'authCode' => firstValue($flat, ['authCode', 'approvalCode', 'authorizationCode']),
+            'referenceNo' => firstValue($flat, ['referenceNo', 'transactionId', 'retrievalReference', 'rrn']),
+            'maskedCard' => maskCard((string) ($requestPayload['transaction']['card']['number'] ?? '')),
+            'amount' => $requestPayload['transaction']['amount'] ?? null,
+            'currency' => $requestPayload['transaction']['currency'] ?? 'USD',
+            'invoice' => $requestPayload['transaction']['invoiceNumber'] ?? null,
+            'zipCode' => $requestPayload['transaction']['billing']['zip'] ?? null,
+            'originalReference' => $requestPayload['transaction']['originalReference'] ?? null,
+            'avsResult' => firstValue($flat, ['avsResult', 'avsCode']),
+            'cvvResult' => firstValue($flat, ['cvvResult', 'cvvCode']),
+            'timestamp' => (new DateTimeImmutable())->format(DATE_ATOM),
+            'mode' => $environment === 'production' ? 'PRODUCTION MODE' : 'TEST MODE (sandbox)',
+            'host' => 'TSYS Gateway',
+        ],
+        'gatewayRaw' => $gatewayResponse,
+    ];
+}
+
+function mockResponse(string $txType, array $requestPayload, string $environment): array
+{
+    $seed = implode('|', [
+        $txType,
+        $requestPayload['transaction']['card']['number'] ?? '',
+        $requestPayload['transaction']['amount'] ?? '0.00',
+        $requestPayload['transaction']['originalReference'] ?? '',
+        (new DateTimeImmutable())->format('YmdHi'),
+    ]);
+    $score = abs((int) crc32($seed)) % 100;
+    $approved = $score < 87;
+    $responseCode = $approved ? '000' : '051';
+    $responseText = $approved ? 'APPROVED' : 'DECLINED';
+    return normalizeGatewayResponse(
+        [
+            'responseCode' => $responseCode,
+            'responseText' => $responseText,
             'authCode' => $approved ? strtoupper(substr(hash('sha256', $seed), 0, 6)) : null,
             'referenceNo' => 'TSYS-' . (new DateTimeImmutable())->format('Ymd-His') . '-' . strtoupper(substr(hash('sha1', $seed), 0, 5)),
-            'maskedCard' => $cardNumber !== '' ? maskCard($cardNumber) : null,
-            'amount' => $amount,
-            'currency' => 'USD',
-            'invoice' => $invoice ?: null,
-            'zipCode' => $zipCode ?: null,
-            'originalReference' => $referenceNo ?: null,
-            'avsResult' => $avsOptions[$score % count($avsOptions)],
-            'cvvResult' => $cvvOptions[$score % count($cvvOptions)],
-            'timestamp' => (new DateTimeImmutable())->format(DATE_ATOM),
-            'mode' => 'TEST MODE (sandbox)',
-            'host' => 'TSYS Virtual Host',
+            'avsResult' => 'Y',
+            'cvvResult' => 'M',
         ],
-    ]);
+        $txType,
+        $requestPayload,
+        $environment
+    );
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $payload = getInputPayload();
+    $txType = strtolower(trim((string) ($payload['txType'] ?? 'charge')));
+    $environment = strtolower(trim((string) ($payload['environment'] ?? 'sandbox')));
+    $environment = $environment === 'production' ? 'production' : 'sandbox';
+    $errors = validatePayload($payload);
+    if ($errors !== []) {
+        $statusCode = isset($errors['_global']) ? 400 : 422;
+        jsonResponse(['ok' => false, 'message' => 'Doğrulama hatası.', 'errors' => $errors], $statusCode);
+    }
+
+    $config = getGatewayConfig();
+    $requestPayload = buildTsysRequest($txType, $payload, $config);
+
+    try {
+        if ($config['enable_mock']) {
+            jsonResponse(mockResponse($txType, $requestPayload, $environment));
+        }
+        $gatewayResponse = callTsysGateway($environment, $requestPayload, $config);
+        jsonResponse(normalizeGatewayResponse($gatewayResponse, $txType, $requestPayload, $environment));
+    } catch (Throwable $exception) {
+        jsonResponse([
+            'ok' => false,
+            'message' => 'TSYS isteği başarısız oldu.',
+            'detail' => $exception->getMessage(),
+            'hint' => 'TSYS_API_KEY / TSYS_API_USERNAME / TSYS_API_PASSWORD ve endpoint ayarlarını kontrol edin.',
+        ], 502);
+    }
 }
 ?>
 <!doctype html>
@@ -204,8 +374,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <span>- Internet Service Provider</span>
       </div>
       <div class="mode-line">
-        <button class="prod-switch" type="button">Switch to Production</button>
-        <strong>TEST MODE (sandbox)</strong>
+        <button id="prodSwitch" class="prod-switch" type="button">Switch to Production</button>
+        <strong id="modeLabel">TEST MODE (sandbox)</strong>
       </div>
     </header>
 
@@ -227,6 +397,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form id="payment-form" novalidate>
           <input type="hidden" id="txType" name="txType" value="charge" />
+          <input type="hidden" id="environment" name="environment" value="sandbox" />
           <h2 id="form-title">Charge (Sale)</h2>
 
           <div class="field">
