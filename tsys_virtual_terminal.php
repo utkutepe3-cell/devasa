@@ -300,7 +300,7 @@ function buildTransNoxXmlRequest(array $payload, array $apiConfig): string
 
     $transactionType = (string) ($payload['transactionType'] ?? 'sale');
     $rootNode = $rootMap[$transactionType] ?? 'Sale';
-    [$deviceId, $transactionKey, $developerId] = resolveTransNoxCredentials($payload, $apiConfig);
+    [$deviceId, $transactionKey, $developerId] = resolveTransNoxCredentials($apiConfig);
 
     $doc = new DOMDocument('1.0', 'UTF-8');
     $doc->formatOutput = false;
@@ -360,20 +360,24 @@ function resolveVendorPassword(array $payload, array $apiConfig): string
     return (string) ($payload['merchant']['vNumber'] ?? '');
 }
 
-function resolveTransNoxCredentials(array $payload, array $apiConfig): array
+function resolveTransNoxCredentials(array $apiConfig): array
 {
     $deviceId = trim((string) ($apiConfig['transnoxDeviceId'] ?? ''));
     $transactionKey = trim((string) ($apiConfig['transnoxTransactionKey'] ?? ''));
     $developerId = trim((string) ($apiConfig['transnoxDeveloperId'] ?? ''));
 
-    if ($deviceId === '') {
-        $deviceId = (string) (($payload['merchant']['storeNumber'] ?? '') . ($payload['merchant']['terminalNumber'] ?? ''));
-    }
+    // Form/env bos ise API key/secret fallback'i yalnizca explicit verilmisse kullan.
     if ($transactionKey === '') {
-        $transactionKey = (string) ($apiConfig['apiKey'] ?: ($payload['merchant']['merchantNumber'] ?? ''));
+        $transactionKey = (string) ($apiConfig['apiKey'] ?? '');
     }
     if ($developerId === '') {
-        $developerId = (string) ($apiConfig['apiSecret'] ?: ($payload['merchant']['vNumber'] ?? ''));
+        $developerId = (string) ($apiConfig['apiSecret'] ?? '');
+    }
+
+    if ($deviceId === '' || $transactionKey === '' || $developerId === '') {
+        throw new InvalidArgumentException(
+            'TransNox credentials are required: deviceID, transactionKey and developerID. MID/V Number are not direct substitutes.'
+        );
     }
 
     return [$deviceId, $transactionKey, $developerId];
@@ -581,6 +585,13 @@ function array_filter_recursive(array $data): array
             font-size: 15px;
             background: #fff;
         }
+        .field small {
+            display: block;
+            margin-top: 5px;
+            color: #687b92;
+            font-size: 11px;
+            line-height: 1.35;
+        }
         .row-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -718,6 +729,7 @@ function array_filter_recursive(array $data): array
                             value="<?= htmlspecialchars((string) $apiConfig['transnoxDeviceId']) ?>"
                             placeholder="TSYS deviceID"
                         >
+                        <small>Store/Terminal numarasi degil; TSYS'in verdigi gercek deviceID olmalidir.</small>
                     </div>
                     <div class="field">
                         <label for="transnox_transaction_key">Transaction Key (TransNox)</label>
@@ -728,6 +740,7 @@ function array_filter_recursive(array $data): array
                             value="<?= htmlspecialchars((string) $apiConfig['transnoxTransactionKey']) ?>"
                             placeholder="TSYS transactionKey"
                         >
+                        <small>MID (Merchant Number) degeri degildir.</small>
                     </div>
                 </div>
                 <div class="field">
@@ -739,6 +752,7 @@ function array_filter_recursive(array $data): array
                         value="<?= htmlspecialchars((string) $apiConfig['transnoxDeveloperId']) ?>"
                         placeholder="TSYS developerID"
                     >
+                    <small>Genelde TSYS tarafindan ayri verilir; V Number ile ayni olmayabilir.</small>
                 </div>
 
                 <button class="cta" id="action-button" type="submit">Run Charge</button>
