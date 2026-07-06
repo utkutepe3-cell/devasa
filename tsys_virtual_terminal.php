@@ -187,7 +187,21 @@ function buildPayload(string $transactionType, array $input, array $merchantConf
 function sendToTsys(array $payload, array $apiConfig): array
 {
     if ($apiConfig['baseUrl'] === '') {
-        throw new RuntimeException('TSYS gateway URL gerekli. Kullandiginiz TSYS/processor endpoint URL degerini girin.');
+        return [
+            'ok' => false,
+            'message' => 'Gateway URL girilmedi. Islem yerel kayit olarak olusturuldu (gercek cekim yapilmadi).',
+            'details' => [
+                'gateway_url' => null,
+                'http_status' => null,
+                'request_payload' => maskRequestPayload($payload),
+                'response' => [
+                    'status' => 'LOCAL_ONLY',
+                    'responseCode' => 'L0001',
+                    'responseMessage' => 'No processor endpoint configured.',
+                    'localReference' => 'LOCAL-' . strtoupper(substr(md5((string) microtime(true)), 0, 12)),
+                ],
+            ],
+        ];
     }
 
     $endpoint = resolveTsysEndpoint($apiConfig['baseUrl']);
@@ -549,7 +563,6 @@ function array_filter_recursive(array $data): array
                         type="text"
                         value="<?= htmlspecialchars($apiConfig['baseUrl']) ?>"
                         placeholder="https://<sizin-tsys-gateway-domaininiz>/<path>"
-                        required
                     >
                 </div>
                 <div class="row-2">
