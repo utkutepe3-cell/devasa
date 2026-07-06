@@ -16,10 +16,13 @@ http://127.0.0.1:8000/index.php
 
 ## TSYS Integration
 
-`index.php` now sends transactions to TSYS Payment Gateway with endpoint + auth format below:
+`index.php` now supports two TSYS gateway profiles:
 
-- Sandbox base URL: `TSYS_SANDBOX_URL` (example: `https://api.sandbox.tsys.com/v1`)
-- Production base URL: `TSYS_PRODUCTION_URL` (example: `https://api.tsys.com/v1`)
+1. `transnox` (default, `/servlets/TransNox_API_Server`)
+2. `rest` (`/transactions/*` style API)
+
+- Sandbox base URL: `TSYS_SANDBOX_URL`
+- Production base URL: `TSYS_PRODUCTION_URL`
 - Auth header:
   - default: `X-TSYS-API-Key: <key>` (`TSYS_AUTH_MODE=x-tsys-api-key`)
   - optional: `Authorization: Bearer <key>` (`TSYS_AUTH_MODE=bearer`)
@@ -35,6 +38,18 @@ export TSYS_AUTH_MODE="x-tsys-api-key"
 export TSYS_API_USERNAME="your_gateway_username"
 export TSYS_API_PASSWORD="your_gateway_password"
 export TSYS_ENABLE_MOCK="0"
+```
+
+### Recommended for your account (TransNox)
+
+```bash
+export TSYS_GATEWAY_PROFILE="transnox"
+export TSYS_SANDBOX_URL="https://stagegw.transnox.com/servlets/TransNox_API_Server"
+export TSYS_PRODUCTION_URL="https://gw.transnox.com/servlets/TransNox_API_Server"
+export TSYS_DEVICE_ID="7000"
+export TSYS_TRANSACTION_KEY="your_transnox_transaction_key"
+export TSYS_DEVELOPER_ID="your_transnox_developer_id"
+export TSYS_TRANSNOX_AMOUNT_MINOR="1"
 ```
 
 > `TSYS_ENABLE_MOCK=1` enables local mock mode (no external TSYS call).
@@ -57,6 +72,74 @@ The backend payload includes these merchant profile fields (default values can b
 - Location Number: 00001
 
 ### Exact request bodies (implemented)
+
+#### TransNox profile (default)
+
+**Charge**
+```json
+{
+  "Sale": {
+    "deviceID": "7000",
+    "transaction_key": "xxx",
+    "card_data_source": "INTERNET",
+    "transaction_amount": "10000",
+    "currency_code": "USD",
+    "card_number": "4111111111111111",
+    "expiration_date": "12/28",
+    "cvv2": "123",
+    "terminal_capability": "ICC_CHIP_READ_ONLY",
+    "terminal_operating_environment": "ON_MERCHANT_PREMISES_ATTENDED",
+    "cardholder_authentication_method": "NOT_AUTHENTICATED",
+    "developerID": "xxx",
+    "order_number": "INV-1001"
+  }
+}
+```
+
+**Auth**
+```json
+{
+  "Auth": {
+    "deviceID": "7000",
+    "transaction_key": "xxx",
+    "card_data_source": "INTERNET",
+    "transaction_amount": "10000",
+    "currency_code": "USD",
+    "card_number": "4111111111111111",
+    "expiration_date": "12/28",
+    "cvv2": "123",
+    "terminal_capability": "ICC_CHIP_READ_ONLY",
+    "terminal_operating_environment": "ON_MERCHANT_PREMISES_ATTENDED",
+    "cardholder_authentication_method": "NOT_AUTHENTICATED",
+    "developerID": "xxx",
+    "order_number": "INV-1001"
+  }
+}
+```
+
+**Void**
+```json
+{
+  "Void": {
+    "deviceID": "7000",
+    "transaction_key": "xxx",
+    "transactionID": "1234567890",
+    "developerID": "xxx"
+  }
+}
+```
+
+**Return**
+```json
+{
+  "Return": {
+    "deviceID": "7000",
+    "transaction_key": "xxx",
+    "transaction_amount": "10000",
+    "transactionID": "1234567890"
+  }
+}
+```
 
 #### Charge (Sale)
 - `POST /transactions/sale`

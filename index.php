@@ -79,13 +79,18 @@ function parseExpiry(string $expiryRaw): ?array
 function getGatewayConfig(): array
 {
     return [
-        'sandbox_url' => rtrim(envString('TSYS_SANDBOX_URL', 'https://api.sandbox.tsys.com/v1'), '/'),
-        'production_url' => rtrim(envString('TSYS_PRODUCTION_URL', 'https://api.tsys.com/v1'), '/'),
+        'sandbox_url' => rtrim(envString('TSYS_SANDBOX_URL', 'https://stagegw.transnox.com/servlets/TransNox_API_Server'), '/'),
+        'production_url' => rtrim(envString('TSYS_PRODUCTION_URL', 'https://gw.transnox.com/servlets/TransNox_API_Server'), '/'),
+        'gateway_profile' => strtolower(envString('TSYS_GATEWAY_PROFILE', 'transnox')),
         'api_key' => envString('TSYS_API_KEY'),
         'username' => envString('TSYS_API_USERNAME'),
         'password' => envString('TSYS_API_PASSWORD'),
         'auth_mode' => strtolower(envString('TSYS_AUTH_MODE', 'x-tsys-api-key')),
         'user_agent' => envString('TSYS_USER_AGENT', 'TSYSVirtualTerminal/1.0'),
+        'device_id' => envString('TSYS_DEVICE_ID', envString('TSYS_TERMINAL_NUMBER', '7000')),
+        'transaction_key' => envString('TSYS_TRANSACTION_KEY'),
+        'developer_id' => envString('TSYS_DEVELOPER_ID'),
+        'transnox_amount_minor' => envString('TSYS_TRANSNOX_AMOUNT_MINOR', '1') === '1',
         'timeout_seconds' => (int) envString('TSYS_TIMEOUT_SECONDS', '45'),
         'enable_mock' => envString('TSYS_ENABLE_MOCK', '0') === '1',
         'merchant' => [
@@ -187,6 +192,14 @@ function validatePayload(array $payload): array
 
 function buildTsysRequest(string $txType, array $payload, array $config): array
 {
+    if (($config['gateway_profile'] ?? '') === 'transnox') {
+        return buildTransnoxRequest($txType, $payload, $config);
+    }
+    return buildRestGatewayRequest($txType, $payload, $config);
+}
+
+function buildRestGatewayRequest(string $txType, array $payload, array $config): array
+{
     $expiry = parseExpiry((string) ($payload['expiry'] ?? ''));
     $amount = trim((string) ($payload['amount'] ?? ''));
     $merchantId = $config['merchant']['merchantNumber'] ?? '';
@@ -256,6 +269,76 @@ function buildTsysRequest(string $txType, array $payload, array $config): array
     ];
 }
 
+function amountAsMinorUnit(string $amount): string
+{
+    return (string) (int) round(((float) $amount) * 100);
+}
+
+function buildTransnoxRequest(string $txType, array $payload, array $config): array
+{
+    $expiry = parseExpiry((string) ($payload['expiry'] ?? ''));
+    $amountRaw = trim((string) ($payload['amount'] ?? '0'));
+    $invoice = trim((string) ($payload['invoice'] ?? ''));
+    $referenceNo = trim((string) ($payload['referenceNo'] ?? ''));
+    $deviceId = (string) ($config['device_id'] ?? '');
+    $transactionKey = (string) ($config['transaction_key'] ?? '');
+    $developerId = (string) ($config['developer_id'] ?? '');
+    $amountValue = ($config['transnox_amount_minor'] ?? true)
+        ? amountAsMinorUnit($amountRaw)
+        : number_format((float) $amountRaw, 2, '.', '');
+
+    $base = removeNullAndEmpty([
+        'deviceID' => $deviceId,
+        'transaction_key' => $transactionKey,
+    ]);
+
+    $body = [];
+    if ($txType === 'charge' || $txType === 'auth') {
+        $saleOrAuth = array_merge($base, removeNullAndEmpty([
+            'card_data_source' => 'INTERNET',
+            'transaction_amount' => $amountValue,
+            'currency_code' => 'USD',
+            'card_number' => normalizeDigits((string) ($payload['cardNumber'] ?? '')),
+            'expiration_date' => $expiry ? ($expiry['month'] . '/' . substr($expiry['year'], -2)) : null,
+            'cvv2' => normalizeDigits((string) ($payload['cvv'] ?? '')),
+            'terminal_capability' => 'ICC_CHIP_READ_ONLY',
+            'terminal_operating_environment' => 'ON_MERCHANT_PREMISES_ATTENDED',
+            'cardholder_authentication_method' => 'NOT_AUTHENTICATED',
+            'developerID' => $developerId,
+            'order_number' => $invoice !== '' ? $invoice : 'INV-' . (new DateTimeImmutable())->format('YmdHis'),
+        ]));
+        $body = $txType === 'charge' ? ['Sale' => $saleOrAuth] : ['Auth' => $saleOrAuth];
+    } elseif ($txType === 'void') {
+        $body = [
+            'Void' => array_merge($base, removeNullAndEmpty([
+                'transactionID' => $referenceNo,
+                'developerID' => $developerId,
+            ])),
+        ];
+    } elseif ($txType === 'return') {
+        $body = [
+            'Return' => array_merge($base, removeNullAndEmpty([
+                'transaction_amount' => $amountValue,
+                'transactionID' => $referenceNo,
+            ])),
+        ];
+    }
+
+    return [
+        'method' => 'POST',
+        'path' => '',
+        'body' => $body,
+        'txType' => $txType,
+        'referenceNo' => $referenceNo,
+        'merchant' => $config['merchant'],
+        'meta' => [
+            'source' => 'tsys-virtual-terminal-web',
+            'requestedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+            'profile' => 'transnox',
+        ],
+    ];
+}
+
 function callTsysGateway(string $environment, array $requestPayload, array $config): array
 {
     $baseUrl = $environment === 'production' ? $config['production_url'] : $config['sandbox_url'];
@@ -263,10 +346,11 @@ function callTsysGateway(string $environment, array $requestPayload, array $conf
     if ($baseUrl === '') {
         throw new RuntimeException('TSYS endpoint boş. TSYS_SANDBOX_URL / TSYS_PRODUCTION_URL tanımlayın.');
     }
-    if ($path === '') {
+    $isTransnox = ($config['gateway_profile'] ?? '') === 'transnox';
+    if ($path === '' && !$isTransnox) {
         throw new RuntimeException('İstek path bilgisi boş.');
     }
-    $url = $baseUrl . $path;
+    $url = $isTransnox ? $baseUrl : $baseUrl . $path;
     if (!function_exists('curl_init')) {
         throw new RuntimeException('PHP cURL extension bulunamadı.');
     }
@@ -333,6 +417,10 @@ function firstValue(array $source, array $keys): mixed
 
 function normalizeGatewayResponse(array $gatewayResponse, string $txType, array $requestPayload, string $environment): array
 {
+    if ((($requestPayload['meta']['profile'] ?? '') === 'transnox')) {
+        return normalizeTransnoxResponse($gatewayResponse, $txType, $requestPayload, $environment);
+    }
+
     $flat = $gatewayResponse;
     if (isset($gatewayResponse['transaction']) && is_array($gatewayResponse['transaction'])) {
         $flat = array_merge($flat, $gatewayResponse['transaction']);
@@ -364,6 +452,46 @@ function normalizeGatewayResponse(array $gatewayResponse, string $txType, array 
             'timestamp' => (new DateTimeImmutable())->format(DATE_ATOM),
             'mode' => $environment === 'production' ? 'PRODUCTION MODE' : 'TEST MODE (sandbox)',
             'host' => 'TSYS Gateway',
+        ],
+        'gatewayRaw' => $gatewayResponse,
+    ];
+}
+
+function normalizeTransnoxResponse(array $gatewayResponse, string $txType, array $requestPayload, string $environment): array
+{
+    $responseNode = $gatewayResponse;
+    foreach (['SaleResponse', 'AuthResponse', 'VoidResponse', 'ReturnResponse', 'SearchTransactionResponse'] as $key) {
+        if (isset($gatewayResponse[$key]) && is_array($gatewayResponse[$key])) {
+            $responseNode = $gatewayResponse[$key];
+            break;
+        }
+    }
+
+    $statusText = strtoupper((string) firstValue($responseNode, ['status', 'Status']));
+    $responseCode = (string) (firstValue($responseNode, ['response_code', 'responseCode', 'Code']) ?? 'UNKNOWN');
+    $responseMessage = (string) (firstValue($responseNode, ['response_message', 'responseMessage', 'Message']) ?? $statusText);
+    $approved = $statusText === 'PASS' || str_starts_with($responseCode, 'A');
+
+    return [
+        'ok' => true,
+        'transaction' => [
+            'type' => strtoupper($txType),
+            'status' => $approved ? 'approved' : 'declined',
+            'responseCode' => $responseCode,
+            'responseText' => $responseMessage !== '' ? $responseMessage : $statusText,
+            'authCode' => firstValue($responseNode, ['approval_code', 'authCode']),
+            'referenceNo' => firstValue($responseNode, ['transaction_id', 'transactionID', 'referenceNo']),
+            'maskedCard' => maskCard((string) firstValue($requestPayload['body']['Sale'] ?? $requestPayload['body']['Auth'] ?? [], ['card_number'])),
+            'amount' => firstValue($requestPayload['body']['Sale'] ?? $requestPayload['body']['Auth'] ?? $requestPayload['body']['Return'] ?? [], ['transaction_amount']),
+            'currency' => firstValue($requestPayload['body']['Sale'] ?? $requestPayload['body']['Auth'] ?? [], ['currency_code']) ?? 'USD',
+            'invoice' => firstValue($requestPayload['body']['Sale'] ?? $requestPayload['body']['Auth'] ?? [], ['order_number']),
+            'zipCode' => null,
+            'originalReference' => $requestPayload['referenceNo'] ?? null,
+            'avsResult' => firstValue($responseNode, ['avs_response', 'avsResult']),
+            'cvvResult' => firstValue($responseNode, ['cvv2_response', 'cvvResult']),
+            'timestamp' => (new DateTimeImmutable())->format(DATE_ATOM),
+            'mode' => $environment === 'production' ? 'PRODUCTION MODE' : 'TEST MODE (sandbox)',
+            'host' => 'TSYS TransNox',
         ],
         'gatewayRaw' => $gatewayResponse,
     ];
@@ -412,6 +540,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $requestPayload = buildTsysRequest($txType, $payload, $config);
 
     try {
+        if (($config['gateway_profile'] ?? '') === 'transnox' && $config['enable_mock'] !== true) {
+            if (($config['transaction_key'] ?? '') === '' || ($config['developer_id'] ?? '') === '') {
+                jsonResponse([
+                    'ok' => false,
+                    'message' => 'TSYS TransNox için eksik kimlik bilgisi.',
+                    'errors' => [
+                        'transaction_key' => 'TSYS_TRANSACTION_KEY zorunlu.',
+                        'developer_id' => 'TSYS_DEVELOPER_ID zorunlu.',
+                    ],
+                ], 422);
+            }
+        }
         if ($config['enable_mock']) {
             jsonResponse(mockResponse($txType, $requestPayload, $environment));
         }
