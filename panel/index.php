@@ -4,7 +4,28 @@ declare(strict_types=1);
 
 session_start();
 
-require_once __DIR__ . '/../src/Gateways/TsysVirtualTerminalGateway.php';
+$gatewayClassFileCandidates = [
+    __DIR__ . '/../src/Gateways/TsysVirtualTerminalGateway.php', // repo structure
+    __DIR__ . '/src/Gateways/TsysVirtualTerminalGateway.php',    // htdocs root structure
+];
+
+$gatewayClassFile = null;
+foreach ($gatewayClassFileCandidates as $candidate) {
+    if (is_file($candidate)) {
+        $gatewayClassFile = $candidate;
+        break;
+    }
+}
+
+if ($gatewayClassFile === null) {
+    http_response_code(500);
+    echo 'TsysVirtualTerminalGateway.php bulunamadi. ';
+    echo 'Beklenen konumlardan birine dosyayi yerlestirin: ';
+    echo implode(' | ', $gatewayClassFileCandidates);
+    exit;
+}
+
+require_once $gatewayClassFile;
 
 $gateway = new TsysVirtualTerminalGateway();
 $gatewayInfo = $gateway->getGatewayInfo();
