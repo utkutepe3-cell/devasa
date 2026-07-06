@@ -95,27 +95,54 @@ final class TsysVirtualTerminalGateway
     /**
      * Creates an active virtual terminal response payload.
      */
-    public function createVirtualTerminal(): array
+    public function createVirtualTerminal(array $overrides = []): array
     {
         $gatewayInfo = $this->getGatewayInfo();
-
-        return [
-            'success' => true,
-            'message' => 'Virtual terminal created successfully.',
-            'virtual_terminal' => [
-                'id' => sprintf(
-                    'vt-%s-%s',
-                    $gatewayInfo['credentials']['terminal_id'],
-                    $gatewayInfo['merchant_profile']['location_number']
-                ),
-                'status' => 'active',
-                'return_refund_status' => 'active',
+        $terminal = array_replace(
+            [
                 'merchant_number' => $gatewayInfo['merchant_profile']['merchant_number'],
                 'store_number' => $gatewayInfo['merchant_profile']['store_number'],
                 'terminal_number' => $gatewayInfo['merchant_profile']['terminal_number'],
                 'location_number' => $gatewayInfo['merchant_profile']['location_number'],
+            ],
+            $overrides
+        );
+
+        return [
+            'success' => true,
+            'message' => 'Virtual terminal created successfully.',
+            'status' => 'active',
+            'return' => [
+                'enabled' => true,
+                'status' => 'active',
+            ],
+            'virtual_terminal' => [
+                'id' => sprintf(
+                    'vt-%s-%s',
+                    $terminal['terminal_number'],
+                    $terminal['location_number']
+                ),
+                'status' => 'active',
+                'return_refund_status' => 'active',
+                'merchant_number' => $terminal['merchant_number'],
+                'store_number' => $terminal['store_number'],
+                'terminal_number' => $terminal['terminal_number'],
+                'location_number' => $terminal['location_number'],
                 'supported_card_types' => $gatewayInfo['card_types_accepted'],
             ],
         ];
     }
+
+    /**
+     * Alias for integrations that call a generic create method.
+     */
+    public function create(array $overrides = []): array
+    {
+        return $this->createVirtualTerminal($overrides);
+    }
+}
+
+// Allows "new TsysVirtualTerminalGateway()" without namespace.
+if (!class_exists('TsysVirtualTerminalGateway', false)) {
+    class_alias(TsysVirtualTerminalGateway::class, 'TsysVirtualTerminalGateway');
 }

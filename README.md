@@ -9,9 +9,10 @@
 ```php
 <?php
 
-use Devasa\Gateways\TsysVirtualTerminalGateway;
+require_once __DIR__ . '/src/Gateways/TsysVirtualTerminalGateway.php';
 
 $gateway = new TsysVirtualTerminalGateway();
 $info = $gateway->getGatewayInfo();
 $virtualTerminal = $gateway->createVirtualTerminal();
+$virtualTerminalViaCreate = $gateway->create(); // alias
 ```
