@@ -10,7 +10,7 @@ declare(strict_types=1);
  * - Verilen merchant bilgileri entegre edilmistir.
  */
 
-$merchantConfig = [
+$merchantDefaults = [
     'dba' => 'Get Your Life Back LLC',
     'streetAddress' => '28 Tindall Rd',
     'city' => 'Middletown',
@@ -37,14 +37,31 @@ $merchantConfig = [
 
 $defaultGatewayUrl = 'https://api.tsys.com/transactions';
 $gatewayUrl = trim((string) ($_POST['gateway_url'] ?? getenv('TSYS_API_URL') ?: $defaultGatewayUrl));
-$apiKeyInput = trim((string) ($_POST['api_key'] ?? getenv('TSYS_API_KEY') ?: ''));
-$apiSecretInput = trim((string) ($_POST['api_secret'] ?? getenv('TSYS_API_SECRET') ?: ''));
+$merchantConfig = [
+    'dba' => trim((string) ($_POST['merchant_dba'] ?? $merchantDefaults['dba'])),
+    'streetAddress' => trim((string) ($_POST['merchant_street'] ?? $merchantDefaults['streetAddress'])),
+    'city' => trim((string) ($_POST['merchant_city'] ?? $merchantDefaults['city'])),
+    'state' => trim((string) ($_POST['merchant_state'] ?? $merchantDefaults['state'])),
+    'zip' => trim((string) ($_POST['merchant_zip'] ?? $merchantDefaults['zip'])),
+    'customerServicePhone' => trim((string) ($_POST['merchant_phone'] ?? $merchantDefaults['customerServicePhone'])),
+    'merchantNumber' => trim((string) ($_POST['merchant_number'] ?? $merchantDefaults['merchantNumber'])),
+    'vNumber' => trim((string) ($_POST['v_number'] ?? $merchantDefaults['vNumber'])),
+    'mcc' => trim((string) ($_POST['mcc'] ?? $merchantDefaults['mcc'])),
+    'bin' => trim((string) ($_POST['bin'] ?? $merchantDefaults['bin'])),
+    'chain' => trim((string) ($_POST['chain'] ?? $merchantDefaults['chain'])),
+    'agentBank' => trim((string) ($_POST['agent_bank'] ?? $merchantDefaults['agentBank'])),
+    'storeNumber' => trim((string) ($_POST['store_number'] ?? $merchantDefaults['storeNumber'])),
+    'terminalNumber' => trim((string) ($_POST['terminal_number'] ?? $merchantDefaults['terminalNumber'])),
+    'locationNumber' => trim((string) ($_POST['location_number'] ?? $merchantDefaults['locationNumber'])),
+    'cardTypesAccepted' => $merchantDefaults['cardTypesAccepted'],
+    'approvedMonthlyVolume' => $merchantDefaults['approvedMonthlyVolume'],
+];
 
 $apiConfig = [
     // Canli/sandbox endpointi: form alani > environment > fallback.
     'baseUrl' => rtrim($gatewayUrl, '/'),
-    'apiKey' => $apiKeyInput,
-    'apiSecret' => $apiSecretInput,
+    'authUser' => $merchantConfig['merchantNumber'],
+    'authPass' => $merchantConfig['vNumber'],
     'timeout' => 45,
 ];
 
@@ -180,13 +197,9 @@ function sendToTsys(array $payload, array $apiConfig): array
         'Accept: application/json',
     ];
 
-    // Cogu TSYS entegrasyonunda API key/secret veya benzeri auth gerekir.
-    if ($apiConfig['apiKey'] !== '' && $apiConfig['apiSecret'] !== '') {
-        $headers[] = 'Authorization: Basic ' . base64_encode($apiConfig['apiKey'] . ':' . $apiConfig['apiSecret']);
-    } elseif ($apiConfig['apiKey'] !== '') {
-        $headers[] = 'Authorization: Bearer ' . $apiConfig['apiKey'];
-    } else {
-        throw new RuntimeException('TSYS API key gerekli (api_key veya TSYS_API_KEY).');
+    // Elinizdeki bilgilere gore merchantNumber/vNumber ile basic auth denenir.
+    if ($apiConfig['authUser'] !== '' && $apiConfig['authPass'] !== '') {
+        $headers[] = 'Authorization: Basic ' . base64_encode($apiConfig['authUser'] . ':' . $apiConfig['authPass']);
     }
 
     $ch = curl_init($endpoint);
@@ -536,25 +549,56 @@ function array_filter_recursive(array $data): array
                 </div>
                 <div class="row-2">
                     <div class="field">
-                        <label for="api_key">TSYS API Key</label>
+                        <label for="merchant_number">Merchant Number</label>
                         <input
-                            id="api_key"
-                            name="api_key"
+                            id="merchant_number"
+                            name="merchant_number"
                             type="text"
-                            value="<?= htmlspecialchars((string) $apiConfig['apiKey']) ?>"
-                            placeholder="TSYS API key"
+                            value="<?= htmlspecialchars((string) $merchantConfig['merchantNumber']) ?>"
+                            placeholder="401151759710"
                             required
                         >
                     </div>
                     <div class="field">
-                        <label for="api_secret">TSYS API Secret (optional)</label>
+                        <label for="v_number">V Number</label>
                         <input
-                            id="api_secret"
-                            name="api_secret"
-                            type="password"
-                            value="<?= htmlspecialchars((string) $apiConfig['apiSecret']) ?>"
-                            placeholder="TSYS API secret"
+                            id="v_number"
+                            name="v_number"
+                            type="text"
+                            value="<?= htmlspecialchars((string) $merchantConfig['vNumber']) ?>"
+                            placeholder="V6298237"
+                            required
                         >
+                    </div>
+                </div>
+                <div class="row-2">
+                    <div class="field">
+                        <label for="store_number">Store Number</label>
+                        <input id="store_number" name="store_number" type="text" value="<?= htmlspecialchars((string) $merchantConfig['storeNumber']) ?>" placeholder="0001">
+                    </div>
+                    <div class="field">
+                        <label for="terminal_number">Terminal Number</label>
+                        <input id="terminal_number" name="terminal_number" type="text" value="<?= htmlspecialchars((string) $merchantConfig['terminalNumber']) ?>" placeholder="7000">
+                    </div>
+                </div>
+                <div class="row-2">
+                    <div class="field">
+                        <label for="chain">Chain</label>
+                        <input id="chain" name="chain" type="text" value="<?= htmlspecialchars((string) $merchantConfig['chain']) ?>" placeholder="031776">
+                    </div>
+                    <div class="field">
+                        <label for="location_number">Location Number</label>
+                        <input id="location_number" name="location_number" type="text" value="<?= htmlspecialchars((string) $merchantConfig['locationNumber']) ?>" placeholder="00001">
+                    </div>
+                </div>
+                <div class="row-2">
+                    <div class="field">
+                        <label for="mcc">MCC</label>
+                        <input id="mcc" name="mcc" type="text" value="<?= htmlspecialchars((string) $merchantConfig['mcc']) ?>" placeholder="5499">
+                    </div>
+                    <div class="field">
+                        <label for="bin">BIN</label>
+                        <input id="bin" name="bin" type="text" value="<?= htmlspecialchars((string) $merchantConfig['bin']) ?>" placeholder="494306">
                     </div>
                 </div>
 
