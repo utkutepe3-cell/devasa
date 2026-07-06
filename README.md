@@ -17,6 +17,7 @@ Bu repoya tek dosyalik bir PHP odeme ekrani eklendi:
 
 2. TSYS tarafindan verilen **gercek API endpoint** ve `TSYS_API_KEY` degerlerini `.env` icinde guncelle.
    - Alternatif olarak bu iki degeri form ekranindan da girebilirsin.
+   - `replace-with-your-tsys-endpoint.example.com` yalnizca placeholder'dir; bu adresle istek atilamaz.
 
 3. Yerelde calistir:
 

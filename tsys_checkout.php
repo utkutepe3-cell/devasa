@@ -53,6 +53,16 @@ function esc(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
+function isPlaceholderGatewayUrl(string $url): bool
+{
+    $host = (string)parse_url($url, PHP_URL_HOST);
+    if ($host === '') {
+        return false;
+    }
+
+    return str_contains($host, 'replace-with-your-tsys-endpoint.example.com');
+}
+
 function normalizeAmount(string $amount): string
 {
     $amount = str_replace(',', '.', trim($amount));
@@ -243,6 +253,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (($effectiveConfig[$required] ?? '') === '') {
             $errors[] = sprintf('Missing config: %s', $required);
         }
+    }
+    if ($effectiveConfig['api_url'] !== '' && isPlaceholderGatewayUrl($effectiveConfig['api_url'])) {
+        $errors[] = 'TSYS API URL is still placeholder. Enter your real TSYS host URL.';
+    }
+    if ($effectiveConfig['api_key'] === 'replace-with-your-tsys-api-key') {
+        $errors[] = 'TSYS API key is still placeholder. Enter your real API key.';
     }
     if ($input['transaction_type'] === 'return' && $input['original_transaction_id'] === '') {
         $errors[] = 'Original transaction ID is required for return.';
