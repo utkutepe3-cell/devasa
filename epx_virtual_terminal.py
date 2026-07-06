@@ -4,6 +4,11 @@ EPX Virtual Terminal helper (template).
 
 This script is a safe starter template for legitimate merchant usage.
 You must replace endpoint/payload fields according to your EPX API docs.
+
+Required env vars:
+  EPX_BASE_URL, MERCH_NBR, DBA_NBR, CUST_NBR, TERMINAL_NBR
+Optional env var:
+  EPX_API_KEY
 """
 
 from __future__ import annotations
@@ -23,7 +28,10 @@ import requests
 class EpxConfig:
     base_url: str
     api_key: str
-    merchant_id: str
+    merch_nbr: str
+    dba_nbr: str
+    cust_nbr: str
+    terminal_nbr: str
     timeout_seconds: int = 30
     dry_run: bool = True
 
@@ -31,14 +39,19 @@ class EpxConfig:
 def load_config(dry_run: bool) -> EpxConfig:
     base_url = os.getenv("EPX_BASE_URL", "").strip()
     api_key = os.getenv("EPX_API_KEY", "").strip()
-    merchant_id = os.getenv("EPX_MERCHANT_ID", "").strip()
+    merch_nbr = os.getenv("MERCH_NBR", "").strip()
+    dba_nbr = os.getenv("DBA_NBR", "").strip()
+    cust_nbr = os.getenv("CUST_NBR", "").strip()
+    terminal_nbr = os.getenv("TERMINAL_NBR", "").strip()
 
     missing = [
         name
         for name, value in (
             ("EPX_BASE_URL", base_url),
-            ("EPX_API_KEY", api_key),
-            ("EPX_MERCHANT_ID", merchant_id),
+            ("MERCH_NBR", merch_nbr),
+            ("DBA_NBR", dba_nbr),
+            ("CUST_NBR", cust_nbr),
+            ("TERMINAL_NBR", terminal_nbr),
         )
         if not value
     ]
@@ -48,7 +61,10 @@ def load_config(dry_run: bool) -> EpxConfig:
     return EpxConfig(
         base_url=base_url.rstrip("/"),
         api_key=api_key,
-        merchant_id=merchant_id,
+        merch_nbr=merch_nbr,
+        dba_nbr=dba_nbr,
+        cust_nbr=cust_nbr,
+        terminal_nbr=terminal_nbr,
         dry_run=dry_run,
     )
 
@@ -64,10 +80,21 @@ def parse_amount(raw: str) -> str:
 
 
 def build_headers(config: EpxConfig) -> Dict[str, str]:
-    return {
-        "Authorization": f"Bearer {config.api_key}",
+    headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
+    }
+    if config.api_key:
+        headers["Authorization"] = f"Bearer {config.api_key}"
+    return headers
+
+
+def build_epx_identifiers(config: EpxConfig) -> Dict[str, str]:
+    return {
+        "merch_nbr": config.merch_nbr,
+        "dba_nbr": config.dba_nbr,
+        "cust_nbr": config.cust_nbr,
+        "terminal_nbr": config.terminal_nbr,
     }
 
 
@@ -93,7 +120,7 @@ def post_transaction(config: EpxConfig, payload: Dict[str, Any]) -> Dict[str, An
 def build_sale_payload(args: argparse.Namespace, config: EpxConfig) -> Dict[str, Any]:
     # Replace with exact EPX sale schema from your account documentation.
     return {
-        "merchant_id": config.merchant_id,
+        **build_epx_identifiers(config),
         "type": "sale",
         "amount": parse_amount(args.amount),
         "currency": args.currency,
@@ -114,7 +141,7 @@ def build_sale_payload(args: argparse.Namespace, config: EpxConfig) -> Dict[str,
 def build_refund_payload(args: argparse.Namespace, config: EpxConfig) -> Dict[str, Any]:
     # Replace with exact EPX refund/open-credit schema from your processor setup.
     payload: Dict[str, Any] = {
-        "merchant_id": config.merchant_id,
+        **build_epx_identifiers(config),
         "type": "refund",
         "amount": parse_amount(args.amount),
         "reference": args.reference,
