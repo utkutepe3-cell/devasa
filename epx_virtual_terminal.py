@@ -36,7 +36,24 @@ class EpxConfig:
     dry_run: bool = True
 
 
-def load_config(dry_run: bool) -> EpxConfig:
+def load_env_file(path: str) -> None:
+    if not path or not os.path.exists(path):
+        return
+    with open(path, "r", encoding="utf-8") as file:
+        for raw_line in file:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            # Keep already-set shell variables unchanged.
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+def load_config(dry_run: bool, env_file: str) -> EpxConfig:
+    load_env_file(env_file)
     base_url = os.getenv("EPX_BASE_URL", "").strip()
     api_key = os.getenv("EPX_API_KEY", "").strip()
     merch_nbr = os.getenv("MERCH_NBR", "").strip()
@@ -56,7 +73,11 @@ def load_config(dry_run: bool) -> EpxConfig:
         if not value
     ]
     if missing:
-        raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+        raise ValueError(
+            "Missing required environment variables: "
+            f"{', '.join(missing)}. "
+            "Create a .env.epx file or export them in your shell."
+        )
 
     return EpxConfig(
         base_url=base_url.rstrip("/"),
@@ -160,6 +181,11 @@ def add_common(parent: argparse.ArgumentParser) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="EPX Virtual Terminal template client")
     parser.add_argument(
+        "--env-file",
+        default=".env.epx",
+        help="Path to env file (default: .env.epx)",
+    )
+    parser.add_argument(
         "--execute",
         action="store_true",
         help="Actually send request. Default is dry-run.",
@@ -191,7 +217,7 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        config = load_config(dry_run=not args.execute)
+        config = load_config(dry_run=not args.execute, env_file=args.env_file)
         if args.command == "sale":
             payload = build_sale_payload(args, config)
         elif args.command == "refund":
