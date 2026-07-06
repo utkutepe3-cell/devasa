@@ -37,3 +37,8 @@ Eger dosyayi `C:\xampp\htdocs` altinda calistiriyorsan, su yapiyi koru:
 - `C:\xampp\htdocs\src\Gateways\TsysVirtualTerminalGateway.php` (gateway sinifi)
 
 Panel, hem `../src/...` hem `./src/...` yollarini otomatik dener.
+
+Eger beyaz ekran goruyorsan:
+
+- `php -v` ile surumu kontrol et (onerilen: PHP 7.4+)
+- panel artik hata mesajlarini ekrana basar; sayfayi yenileyip hatayi kontrol et

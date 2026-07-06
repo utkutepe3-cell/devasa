@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 
 $gatewayClassFileCandidates = [
     __DIR__ . '/../src/Gateways/TsysVirtualTerminalGateway.php', // repo structure
@@ -27,9 +29,15 @@ if ($gatewayClassFile === null) {
 
 require_once $gatewayClassFile;
 
-$gateway = new TsysVirtualTerminalGateway();
-$gatewayInfo = $gateway->getGatewayInfo();
-$virtualTerminal = $gateway->createVirtualTerminal();
+try {
+    $gateway = new TsysVirtualTerminalGateway();
+    $gatewayInfo = $gateway->getGatewayInfo();
+    $virtualTerminal = $gateway->createVirtualTerminal();
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo 'Gateway baslatilamadi: ' . $e->getMessage();
+    exit;
+}
 
 if (!isset($_SESSION['transactions'])) {
     $_SESSION['transactions'] = [];
@@ -171,7 +179,9 @@ $flash = consumeFlash();
 $transactions = array_values($_SESSION['transactions']);
 usort(
     $transactions,
-    static fn (array $a, array $b): int => strcmp($b['created_at'], $a['created_at'])
+    static function (array $a, array $b): int {
+        return strcmp($b['created_at'], $a['created_at']);
+    }
 );
 ?>
 <!doctype html>
