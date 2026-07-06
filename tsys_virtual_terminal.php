@@ -35,7 +35,7 @@ $merchantDefaults = [
     'approvedMonthlyVolume' => '$30,000.00',
 ];
 
-$defaultGatewayUrl = 'https://api.tsys.com/transactions';
+$defaultGatewayUrl = '';
 $gatewayUrl = trim((string) ($_POST['gateway_url'] ?? getenv('TSYS_API_URL') ?: $defaultGatewayUrl));
 $merchantConfig = [
     'dba' => trim((string) ($_POST['merchant_dba'] ?? $merchantDefaults['dba'])),
@@ -187,7 +187,7 @@ function buildPayload(string $transactionType, array $input, array $merchantConf
 function sendToTsys(array $payload, array $apiConfig): array
 {
     if ($apiConfig['baseUrl'] === '') {
-        throw new RuntimeException('TSYS gateway URL bos birakilamaz.');
+        throw new RuntimeException('TSYS gateway URL gerekli. Kullandiginiz TSYS/processor endpoint URL degerini girin.');
     }
 
     $endpoint = resolveTsysEndpoint($apiConfig['baseUrl']);
@@ -215,6 +215,11 @@ function sendToTsys(array $payload, array $apiConfig): array
     if ($body === false) {
         $error = curl_error($ch);
         curl_close($ch);
+        if (stripos($error, 'Could not resolve host') !== false) {
+            throw new RuntimeException(
+                'Gateway host adi cozumlenemedi. URL/domain hatali olabilir veya DNS erisimi yok. Lutfen TSYS tarafindan verilen tam endpoint URL kullanin.'
+            );
+        }
         throw new RuntimeException('cURL error: ' . $error);
     }
 
@@ -543,7 +548,7 @@ function array_filter_recursive(array $data): array
                         name="gateway_url"
                         type="text"
                         value="<?= htmlspecialchars($apiConfig['baseUrl']) ?>"
-                        placeholder="https://your-tsys-gateway.example.com/api"
+                        placeholder="https://<sizin-tsys-gateway-domaininiz>/<path>"
                         required
                     >
                 </div>
