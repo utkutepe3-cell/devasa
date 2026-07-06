@@ -79,11 +79,13 @@ function parseExpiry(string $expiryRaw): ?array
 function getGatewayConfig(): array
 {
     return [
-        'sandbox_url' => envString('TSYS_SANDBOX_URL', 'https://stagegw.transnox.com/servlets/transnox_api_server'),
-        'production_url' => envString('TSYS_PRODUCTION_URL', 'https://gw.transnox.com/servlets/transnox_api_server'),
+        'sandbox_url' => rtrim(envString('TSYS_SANDBOX_URL', 'https://api.sandbox.tsys.com/v1'), '/'),
+        'production_url' => rtrim(envString('TSYS_PRODUCTION_URL', 'https://api.tsys.com/v1'), '/'),
         'api_key' => envString('TSYS_API_KEY'),
         'username' => envString('TSYS_API_USERNAME'),
         'password' => envString('TSYS_API_PASSWORD'),
+        'auth_mode' => strtolower(envString('TSYS_AUTH_MODE', 'x-tsys-api-key')),
+        'user_agent' => envString('TSYS_USER_AGENT', 'TSYSVirtualTerminal/1.0'),
         'timeout_seconds' => (int) envString('TSYS_TIMEOUT_SECONDS', '45'),
         'enable_mock' => envString('TSYS_ENABLE_MOCK', '0') === '1',
         'merchant' => [
@@ -165,29 +167,50 @@ function buildTsysRequest(string $txType, array $payload, array $config): array
 {
     $expiry = parseExpiry((string) ($payload['expiry'] ?? ''));
     $amount = trim((string) ($payload['amount'] ?? ''));
-    $operationMap = [
-        'charge' => 'SALE',
-        'auth' => 'AUTH',
-        'void' => 'VOID',
-        'return' => 'REFUND',
-    ];
-    return [
-        'transaction' => [
-            'operation' => $operationMap[$txType] ?? strtoupper($txType),
-            'amount' => $amount !== '' ? number_format((float) $amount, 2, '.', '') : null,
-            'currency' => 'USD',
-            'invoiceNumber' => trim((string) ($payload['invoice'] ?? '')),
-            'originalReference' => trim((string) ($payload['referenceNo'] ?? '')),
-            'card' => [
-                'number' => normalizeDigits((string) ($payload['cardNumber'] ?? '')),
-                'expirationMonth' => $expiry['month'] ?? null,
-                'expirationYear' => $expiry ? substr($expiry['year'], -2) : null,
-                'cvv' => normalizeDigits((string) ($payload['cvv'] ?? '')),
-            ],
-            'billing' => [
+    $merchantId = $config['merchant']['merchantNumber'] ?? '';
+    $invoice = trim((string) ($payload['invoice'] ?? ''));
+    $referenceNo = trim((string) ($payload['referenceNo'] ?? ''));
+    $baseBody = [
+        'merchantId' => $merchantId,
+        'amount' => $amount !== '' ? (float) number_format((float) $amount, 2, '.', '') : null,
+        'currency' => 'USD',
+        'orderId' => $invoice !== '' ? $invoice : null,
+        'description' => 'TSYS Virtual Terminal ' . strtoupper($txType),
+        'card' => [
+            'cardNumber' => normalizeDigits((string) ($payload['cardNumber'] ?? '')),
+            'expirationDate' => $expiry ? ($expiry['month'] . substr($expiry['year'], -2)) : null,
+            'cvv' => normalizeDigits((string) ($payload['cvv'] ?? '')),
+            'billingAddress' => [
                 'zip' => trim((string) ($payload['zipCode'] ?? '')),
+                'street' => $config['merchant']['streetAddress'] ?? '',
             ],
         ],
+    ];
+
+    $method = 'POST';
+    $path = '/transactions/sale';
+    $body = $baseBody;
+    if ($txType === 'auth') {
+        $path = '/transactions/authorize';
+    } elseif ($txType === 'void') {
+        $path = '/transactions/' . rawurlencode($referenceNo) . '/void';
+        $body = new stdClass();
+    } elseif ($txType === 'return') {
+        $path = '/transactions/' . rawurlencode($referenceNo) . '/refund';
+        $body = [
+            'amount' => $amount !== '' ? (float) number_format((float) $amount, 2, '.', '') : null,
+            'reason' => 'customer_request',
+        ];
+    } else {
+        $body['captureImmediately'] = true;
+    }
+
+    return [
+        'method' => $method,
+        'path' => $path,
+        'body' => $body,
+        'txType' => $txType,
+        'referenceNo' => $referenceNo,
         'merchant' => $config['merchant'],
         'meta' => [
             'source' => 'tsys-virtual-terminal-web',
@@ -198,10 +221,15 @@ function buildTsysRequest(string $txType, array $payload, array $config): array
 
 function callTsysGateway(string $environment, array $requestPayload, array $config): array
 {
-    $url = $environment === 'production' ? $config['production_url'] : $config['sandbox_url'];
-    if ($url === '') {
+    $baseUrl = $environment === 'production' ? $config['production_url'] : $config['sandbox_url'];
+    $path = (string) ($requestPayload['path'] ?? '');
+    if ($baseUrl === '') {
         throw new RuntimeException('TSYS endpoint boş. TSYS_SANDBOX_URL / TSYS_PRODUCTION_URL tanımlayın.');
     }
+    if ($path === '') {
+        throw new RuntimeException('İstek path bilgisi boş.');
+    }
+    $url = $baseUrl . $path;
     if (!function_exists('curl_init')) {
         throw new RuntimeException('PHP cURL extension bulunamadı.');
     }
@@ -209,9 +237,12 @@ function callTsysGateway(string $environment, array $requestPayload, array $conf
     $headers = [
         'Content-Type: application/json',
         'Accept: application/json',
+        'User-Agent: ' . $config['user_agent'],
     ];
-    if ($config['api_key'] !== '') {
-        $headers[] = 'Authorization: Bearer ' . $config['api_key'];
+    if ($config['api_key'] !== '' && in_array($config['auth_mode'], ['x-tsys-api-key', 'bearer'], true)) {
+        $headers[] = $config['auth_mode'] === 'bearer'
+            ? 'Authorization: Bearer ' . $config['api_key']
+            : 'X-TSYS-API-Key: ' . $config['api_key'];
     }
 
     $curl = curl_init($url);
@@ -220,10 +251,10 @@ function callTsysGateway(string $environment, array $requestPayload, array $conf
     }
 
     curl_setopt_array($curl, [
-        CURLOPT_POST => true,
+        CURLOPT_CUSTOMREQUEST => strtoupper((string) ($requestPayload['method'] ?? 'POST')),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => $headers,
-        CURLOPT_POSTFIELDS => json_encode($requestPayload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_POSTFIELDS => json_encode($requestPayload['body'] ?? new stdClass(), JSON_UNESCAPED_UNICODE),
         CURLOPT_CONNECTTIMEOUT => 15,
         CURLOPT_TIMEOUT => max(15, (int) $config['timeout_seconds']),
     ]);
@@ -285,12 +316,12 @@ function normalizeGatewayResponse(array $gatewayResponse, string $txType, array 
             'responseText' => $responseText,
             'authCode' => firstValue($flat, ['authCode', 'approvalCode', 'authorizationCode']),
             'referenceNo' => firstValue($flat, ['referenceNo', 'transactionId', 'retrievalReference', 'rrn']),
-            'maskedCard' => maskCard((string) ($requestPayload['transaction']['card']['number'] ?? '')),
-            'amount' => $requestPayload['transaction']['amount'] ?? null,
-            'currency' => $requestPayload['transaction']['currency'] ?? 'USD',
-            'invoice' => $requestPayload['transaction']['invoiceNumber'] ?? null,
-            'zipCode' => $requestPayload['transaction']['billing']['zip'] ?? null,
-            'originalReference' => $requestPayload['transaction']['originalReference'] ?? null,
+            'maskedCard' => maskCard((string) ($requestPayload['body']['card']['cardNumber'] ?? '')),
+            'amount' => $requestPayload['body']['amount'] ?? null,
+            'currency' => $requestPayload['body']['currency'] ?? 'USD',
+            'invoice' => $requestPayload['body']['orderId'] ?? null,
+            'zipCode' => $requestPayload['body']['card']['billingAddress']['zip'] ?? null,
+            'originalReference' => $requestPayload['referenceNo'] ?? null,
             'avsResult' => firstValue($flat, ['avsResult', 'avsCode']),
             'cvvResult' => firstValue($flat, ['cvvResult', 'cvvCode']),
             'timestamp' => (new DateTimeImmutable())->format(DATE_ATOM),
@@ -305,9 +336,9 @@ function mockResponse(string $txType, array $requestPayload, string $environment
 {
     $seed = implode('|', [
         $txType,
-        $requestPayload['transaction']['card']['number'] ?? '',
-        $requestPayload['transaction']['amount'] ?? '0.00',
-        $requestPayload['transaction']['originalReference'] ?? '',
+        $requestPayload['body']['card']['cardNumber'] ?? '',
+        (string) ($requestPayload['body']['amount'] ?? '0.00'),
+        $requestPayload['referenceNo'] ?? '',
         (new DateTimeImmutable())->format('YmdHi'),
     ]);
     $score = abs((int) crc32($seed)) % 100;
