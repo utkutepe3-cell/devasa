@@ -16,3 +16,15 @@ $info = $gateway->getGatewayInfo();
 $virtualTerminal = $gateway->createVirtualTerminal();
 $virtualTerminalViaCreate = $gateway->create(); // alias
 ```
+
+## Virtual Terminal Panel
+
+Kart ile odeme almak ve iade yapmak icin panel:
+
+```bash
+php -S 127.0.0.1:8080 -t panel
+```
+
+Ardindan tarayicida ac:
+
+`http://127.0.0.1:8080/index.php`
