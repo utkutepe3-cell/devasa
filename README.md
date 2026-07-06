@@ -18,6 +18,8 @@ Bu repoya tek dosyalik bir PHP odeme ekrani eklendi:
 2. TSYS tarafindan verilen **gercek API endpoint** ve `TSYS_API_KEY` degerlerini `.env` icinde guncelle.
    - Alternatif olarak bu iki degeri form ekranindan da girebilirsin.
    - `replace-with-your-tsys-endpoint.example.com` yalnizca placeholder'dir; bu adresle istek atilamaz.
+3. Hemen deneme icin formdan `Gateway Mode = Mock` sec. Bu modda dis servise cikmadan basarili/hatali test cevabi uretilir.
+4. Canliya gecis icin `Gateway Mode = Live TSYS` sec ve gercek endpoint/key kullan.
 
 3. Yerelde calistir:
 

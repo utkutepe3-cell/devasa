@@ -141,6 +141,31 @@ function requestToGateway(string $url, array $payload, string $apiKey): array
     ];
 }
 
+function mockGatewayResponse(array $payload): array
+{
+    $approved = random_int(1, 100) > 8; // ~92% success for demo behavior.
+    $txType = (string)($payload['transaction']['type'] ?? 'sale');
+
+    return [
+        'http_code' => $approved ? 200 : 402,
+        'response' => [
+            'mode' => 'mock',
+            'approved' => $approved,
+            'transaction_type' => $txType,
+            'transaction_id' => 'MOCK-' . strtoupper(bin2hex(random_bytes(4))),
+            'auth_code' => $approved ? strtoupper(substr(bin2hex(random_bytes(3)), 0, 6)) : null,
+            'message' => $approved
+                ? ($txType === 'return' ? 'Mock return approved' : 'Mock sale approved')
+                : 'Mock decline: insufficient funds',
+            'amount' => (string)($payload['transaction']['amount'] ?? '0.00'),
+            'currency' => (string)($payload['transaction']['currency'] ?? 'USD'),
+            'user_trace' => (string)($payload['transaction']['user_trace'] ?? ''),
+            'created_at' => gmdate('c'),
+        ],
+        'raw_response' => '',
+    ];
+}
+
 loadEnv(__DIR__ . '/.env');
 if (!is_file(__DIR__ . '/.env')) {
     loadEnv(__DIR__ . '/.env.example');
@@ -186,6 +211,7 @@ $errors = [];
 $result = null;
 
 $defaults = [
+    'gateway_mode' => strtolower((string)envValue('TSYS_GATEWAY_MODE', 'mock')) === 'live' ? 'live' : 'mock',
     'transaction_type' => 'sale',
     'amount' => '10.00',
     'api_url' => (string)$config['api_url'],
@@ -200,6 +226,7 @@ $defaults = [
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = [
+        'gateway_mode' => strtolower(trim((string)($_POST['gateway_mode'] ?? (string)$defaults['gateway_mode']))),
         'transaction_type' => strtolower(trim((string)($_POST['transaction_type'] ?? 'sale'))),
         'amount' => trim((string)($_POST['amount'] ?? '')),
         'api_url' => trim((string)($_POST['api_url'] ?? (string)$config['api_url'])),
@@ -248,17 +275,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $effectiveConfig = $config;
     $effectiveConfig['api_url'] = $input['api_url'];
     $effectiveConfig['api_key'] = $input['api_key'];
+    $effectiveConfig['gateway_mode'] = in_array($input['gateway_mode'], ['live', 'mock'], true) ? $input['gateway_mode'] : 'mock';
 
-    foreach (['api_url', 'api_key'] as $required) {
-        if (($effectiveConfig[$required] ?? '') === '') {
-            $errors[] = sprintf('Missing config: %s', $required);
+    if ($effectiveConfig['gateway_mode'] === 'live') {
+        foreach (['api_url', 'api_key'] as $required) {
+            if (($effectiveConfig[$required] ?? '') === '') {
+                $errors[] = sprintf('Missing config: %s', $required);
+            }
         }
-    }
-    if ($effectiveConfig['api_url'] !== '' && isPlaceholderGatewayUrl($effectiveConfig['api_url'])) {
-        $errors[] = 'TSYS API URL is still placeholder. Enter your real TSYS host URL.';
-    }
-    if ($effectiveConfig['api_key'] === 'replace-with-your-tsys-api-key') {
-        $errors[] = 'TSYS API key is still placeholder. Enter your real API key.';
+        if ($effectiveConfig['api_url'] !== '' && isPlaceholderGatewayUrl($effectiveConfig['api_url'])) {
+            $errors[] = 'TSYS API URL is still placeholder. Enter your real TSYS host URL.';
+        }
+        if ($effectiveConfig['api_key'] === 'replace-with-your-tsys-api-key') {
+            $errors[] = 'TSYS API key is still placeholder. Enter your real API key.';
+        }
     }
     if ($input['transaction_type'] === 'return' && $input['original_transaction_id'] === '') {
         $errors[] = 'Original transaction ID is required for return.';
@@ -311,12 +341,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         try {
-            $gatewayResult = requestToGateway($effectiveConfig['api_url'], $payload, $effectiveConfig['api_key']);
+            $gatewayResult = $effectiveConfig['gateway_mode'] === 'mock'
+                ? mockGatewayResponse($payload)
+                : requestToGateway($effectiveConfig['api_url'], $payload, $effectiveConfig['api_key']);
             $result = [
                 'success' => $gatewayResult['http_code'] >= 200 && $gatewayResult['http_code'] < 300,
                 'http_code' => $gatewayResult['http_code'],
                 'response' => $gatewayResult['response'],
                 'masked_card' => maskCard($cardNumberDigits),
+                'gateway_mode' => $effectiveConfig['gateway_mode'],
             ];
         } catch (Throwable $e) {
             $errors[] = $e->getMessage();
@@ -363,6 +396,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if (is_array($result)): ?>
             <div class="<?= $result['success'] ? 'ok' : 'error' ?>">
                 <strong><?= $result['success'] ? 'Transaction sent successfully.' : 'Gateway returned an error.' ?></strong><br>
+                Mode: <?= esc((string)$result['gateway_mode']) ?><br>
                 HTTP Code: <?= esc((string)$result['http_code']) ?><br>
                 Card: <?= esc((string)$result['masked_card']) ?>
             </div>
@@ -370,6 +404,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="post" autocomplete="off">
+            <div class="row">
+                <div class="col">
+                    <label for="gateway_mode">Gateway Mode</label>
+                    <select id="gateway_mode" name="gateway_mode">
+                        <option value="mock" <?= $defaults['gateway_mode'] === 'mock' ? 'selected' : '' ?>>Mock (immediate test)</option>
+                        <option value="live" <?= $defaults['gateway_mode'] === 'live' ? 'selected' : '' ?>>Live TSYS</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col">
                     <label for="api_url">Gateway API URL</label>
@@ -435,7 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit">Process Transaction</button>
             <p class="hint">
                 This direct-post example is for controlled server-side integration. For production internet payments,
-                use TSYS tokenization/hosted fields + 3DS where available.
+                use TSYS tokenization/hosted fields + 3DS where available. In Mock mode, no external gateway call is made.
             </p>
         </form>
     </div>
