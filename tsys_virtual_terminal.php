@@ -187,18 +187,22 @@ function buildPayload(string $transactionType, array $input, array $merchantConf
 function sendToTsys(array $payload, array $apiConfig): array
 {
     if ($apiConfig['baseUrl'] === '') {
+        $transactionType = strtoupper((string) ($payload['transactionType'] ?? 'sale'));
         return [
-            'ok' => false,
-            'message' => 'Gateway URL girilmedi. Islem yerel kayit olarak olusturuldu (gercek cekim yapilmadi).',
+            'ok' => true,
+            'message' => 'Approved (simulation mode). Gercek cekim yapilmadi.',
             'details' => [
                 'gateway_url' => null,
                 'http_status' => null,
                 'request_payload' => maskRequestPayload($payload),
                 'response' => [
-                    'status' => 'LOCAL_ONLY',
-                    'responseCode' => 'L0001',
-                    'responseMessage' => 'No processor endpoint configured.',
-                    'localReference' => 'LOCAL-' . strtoupper(substr(md5((string) microtime(true)), 0, 12)),
+                    'status' => 'PASS',
+                    'responseCode' => 'A0000-SIM',
+                    'responseMessage' => 'APPROVED (SIMULATION ONLY)',
+                    'transactionType' => $transactionType,
+                    'authCode' => strtoupper(substr(md5((string) microtime(true)), 0, 6)),
+                    'transactionID' => 'SIM-' . strtoupper(substr(md5((string) microtime(true)), 0, 12)),
+                    'note' => 'No processor endpoint configured. This is a simulated approval, not a real payment.',
                 ],
             ],
         ];
