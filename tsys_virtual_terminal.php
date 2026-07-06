@@ -37,12 +37,18 @@ $merchantConfig = [
 
 $defaultGatewayUrl = 'https://stagegw.transnox.com/servlets/TransNox_API_Server';
 $gatewayUrl = trim((string) ($_POST['gateway_url'] ?? getenv('TSYS_API_URL') ?: $defaultGatewayUrl));
+$transNoxDeviceId = trim((string) ($_POST['transnox_device_id'] ?? getenv('TSYS_DEVICE_ID') ?: ''));
+$transNoxTransactionKey = trim((string) ($_POST['transnox_transaction_key'] ?? getenv('TSYS_TRANSACTION_KEY') ?: ''));
+$transNoxDeveloperId = trim((string) ($_POST['transnox_developer_id'] ?? getenv('TSYS_DEVELOPER_ID') ?: ''));
 
 $apiConfig = [
     // Canli/sandbox endpointi: form alani > environment > fallback.
     'baseUrl' => rtrim($gatewayUrl, '/'),
     'apiKey' => (string) getenv('TSYS_API_KEY'),
     'apiSecret' => (string) getenv('TSYS_API_SECRET'),
+    'transnoxDeviceId' => $transNoxDeviceId,
+    'transnoxTransactionKey' => $transNoxTransactionKey,
+    'transnoxDeveloperId' => $transNoxDeveloperId,
     'timeout' => 45,
 ];
 
@@ -286,62 +292,46 @@ function isTransNoxGatewayUrl(string $url): bool
 function buildTransNoxXmlRequest(array $payload, array $apiConfig): string
 {
     $rootMap = [
-        'sale' => 'SaleRequest',
-        'auth' => 'AuthRequest',
-        'void' => 'VoidRequest',
-        'refund' => 'ReturnRequest',
+        'sale' => 'Sale',
+        'auth' => 'Auth',
+        'void' => 'Void',
+        'refund' => 'Return',
     ];
 
     $transactionType = (string) ($payload['transactionType'] ?? 'sale');
-    $rootNode = $rootMap[$transactionType] ?? 'SaleRequest';
+    $rootNode = $rootMap[$transactionType] ?? 'Sale';
+    [$deviceId, $transactionKey, $developerId] = resolveTransNoxCredentials($payload, $apiConfig);
 
     $doc = new DOMDocument('1.0', 'UTF-8');
     $doc->formatOutput = false;
     $root = $doc->createElement($rootNode);
     $doc->appendChild($root);
 
+    appendXmlValue($doc, $root, 'deviceID', $deviceId);
+    appendXmlValue($doc, $root, 'transactionKey', $transactionKey);
+
     if (in_array($transactionType, ['sale', 'auth'], true)) {
-        $customerData = $doc->createElement('CustomerData');
-        $accountInfo = $doc->createElement('AccountInfo');
-        $cardInfo = $doc->createElement('CardInfo');
-        appendXmlValue($doc, $cardInfo, 'CCNum', (string) ($payload['paymentMethod']['cardNumber'] ?? ''));
-        appendXmlValue($doc, $cardInfo, 'CCMo', (string) ($payload['paymentMethod']['expirationMonth'] ?? ''));
-        appendXmlValue($doc, $cardInfo, 'CCYr', (string) ($payload['paymentMethod']['expirationYear'] ?? ''));
-        appendXmlValue($doc, $cardInfo, 'CVV2', (string) ($payload['paymentMethod']['cvv'] ?? ''));
-        $accountInfo->appendChild($cardInfo);
-        $customerData->appendChild($accountInfo);
-
-        $billingZip = (string) ($payload['paymentMethod']['billingZip'] ?? '');
-        if ($billingZip !== '') {
-            $billingAddress = $doc->createElement('BillingAddress');
-            appendXmlValue($doc, $billingAddress, 'Zip', $billingZip);
-            $customerData->appendChild($billingAddress);
-        }
-
-        $root->appendChild($customerData);
-    }
-
-    $transactionData = $doc->createElement('TransactionData');
-    appendXmlValue($doc, $transactionData, 'VendorId', resolveVendorId($payload, $apiConfig));
-    appendXmlValue($doc, $transactionData, 'VendorPassword', resolveVendorPassword($payload, $apiConfig));
-    appendXmlValue($doc, $transactionData, 'MerchantNumber', (string) ($payload['merchant']['merchantNumber'] ?? ''));
-    appendXmlValue($doc, $transactionData, 'VNumber', (string) ($payload['merchant']['vNumber'] ?? ''));
-    appendXmlValue($doc, $transactionData, 'StoreNumber', (string) ($payload['merchant']['storeNumber'] ?? ''));
-    appendXmlValue($doc, $transactionData, 'TerminalNumber', (string) ($payload['merchant']['terminalNumber'] ?? ''));
-    appendXmlValue($doc, $transactionData, 'Chain', (string) ($payload['merchant']['chain'] ?? ''));
-    appendXmlValue($doc, $transactionData, 'InvoiceNumber', (string) ($payload['invoiceNumber'] ?? ''));
-
-    if (isset($payload['amount'])) {
-        appendXmlValue($doc, $transactionData, 'TransactionAmount', (string) $payload['amount']);
+        appendXmlValue($doc, $root, 'cardDataSource', 'INTERNET');
+        appendXmlValue($doc, $root, 'transactionAmount', (string) ($payload['amount'] ?? ''));
+        appendXmlValue($doc, $root, 'cardNumber', (string) ($payload['paymentMethod']['cardNumber'] ?? ''));
+        appendXmlValue($doc, $root, 'expirationDate', buildTransNoxExpiry((string) ($payload['paymentMethod']['expirationMonth'] ?? ''), (string) ($payload['paymentMethod']['expirationYear'] ?? '')));
+        appendXmlValue($doc, $root, 'cvv2', (string) ($payload['paymentMethod']['cvv'] ?? ''));
+        appendXmlValue($doc, $root, 'addressLine1', (string) ($payload['merchant']['address']['street'] ?? ''));
+        appendXmlValue($doc, $root, 'zip', (string) (($payload['paymentMethod']['billingZip'] ?? '') ?: ($payload['merchant']['address']['zip'] ?? '')));
+        appendXmlValue($doc, $root, 'externalReferenceID', resolveExternalReferenceId($payload));
     }
 
     if (in_array($transactionType, ['void', 'refund'], true)) {
-        // Referans bazli islemlerde yaygin alan adlari.
-        appendXmlValue($doc, $transactionData, 'PNRef', (string) ($payload['originalTransactionId'] ?? ''));
-        appendXmlValue($doc, $transactionData, 'TransactionId', (string) ($payload['originalTransactionId'] ?? ''));
+        appendXmlValue($doc, $root, 'transactionID', (string) ($payload['originalTransactionId'] ?? ''));
+        if (isset($payload['amount'])) {
+            appendXmlValue($doc, $root, 'transactionAmount', (string) $payload['amount']);
+        }
+        if ($transactionType === 'void') {
+            appendXmlValue($doc, $root, 'voidReason', 'POST_AUTH_USER_DECLINE');
+        }
     }
 
-    $root->appendChild($transactionData);
+    appendXmlValue($doc, $root, 'developerID', $developerId);
     return $doc->saveXML() ?: '';
 }
 
@@ -370,10 +360,58 @@ function resolveVendorPassword(array $payload, array $apiConfig): string
     return (string) ($payload['merchant']['vNumber'] ?? '');
 }
 
+function resolveTransNoxCredentials(array $payload, array $apiConfig): array
+{
+    $deviceId = trim((string) ($apiConfig['transnoxDeviceId'] ?? ''));
+    $transactionKey = trim((string) ($apiConfig['transnoxTransactionKey'] ?? ''));
+    $developerId = trim((string) ($apiConfig['transnoxDeveloperId'] ?? ''));
+
+    if ($deviceId === '') {
+        $deviceId = (string) (($payload['merchant']['storeNumber'] ?? '') . ($payload['merchant']['terminalNumber'] ?? ''));
+    }
+    if ($transactionKey === '') {
+        $transactionKey = (string) ($apiConfig['apiKey'] ?: ($payload['merchant']['merchantNumber'] ?? ''));
+    }
+    if ($developerId === '') {
+        $developerId = (string) ($apiConfig['apiSecret'] ?: ($payload['merchant']['vNumber'] ?? ''));
+    }
+
+    return [$deviceId, $transactionKey, $developerId];
+}
+
+function resolveExternalReferenceId(array $payload): string
+{
+    $invoice = trim((string) ($payload['invoiceNumber'] ?? ''));
+    if ($invoice !== '') {
+        return $invoice;
+    }
+    return 'INV-' . date('YmdHis');
+}
+
+function buildTransNoxExpiry(string $month, string $year): string
+{
+    $month = str_pad(trim($month), 2, '0', STR_PAD_LEFT);
+    $year = trim($year);
+    if (strlen($year) === 4) {
+        $year = substr($year, 2);
+    }
+    return $month . '/' . $year;
+}
+
 function buildMaskedTransNoxXmlPreview(array $payload, array $apiConfig): string
 {
     $maskedPayload = maskRequestPayload($payload);
-    return buildTransNoxXmlRequest($maskedPayload, $apiConfig);
+    $maskedConfig = $apiConfig;
+    if (isset($maskedConfig['transnoxTransactionKey']) && $maskedConfig['transnoxTransactionKey'] !== '') {
+        $maskedConfig['transnoxTransactionKey'] = '***';
+    }
+    if (isset($maskedConfig['apiKey']) && $maskedConfig['apiKey'] !== '') {
+        $maskedConfig['apiKey'] = '***';
+    }
+    if (isset($maskedConfig['apiSecret']) && $maskedConfig['apiSecret'] !== '') {
+        $maskedConfig['apiSecret'] = '***';
+    }
+    return buildTransNoxXmlRequest($maskedPayload, $maskedConfig);
 }
 
 function parseExpiry(string $expiration): array
@@ -668,6 +706,38 @@ function array_filter_recursive(array $data): array
                         type="text"
                         value="<?= htmlspecialchars($apiConfig['baseUrl']) ?>"
                         placeholder="https://stagegw.transnox.com/servlets/TransNox_API_Server"
+                    >
+                </div>
+                <div class="row-2">
+                    <div class="field">
+                        <label for="transnox_device_id">Device ID (TransNox)</label>
+                        <input
+                            id="transnox_device_id"
+                            name="transnox_device_id"
+                            type="text"
+                            value="<?= htmlspecialchars((string) $apiConfig['transnoxDeviceId']) ?>"
+                            placeholder="TSYS deviceID"
+                        >
+                    </div>
+                    <div class="field">
+                        <label for="transnox_transaction_key">Transaction Key (TransNox)</label>
+                        <input
+                            id="transnox_transaction_key"
+                            name="transnox_transaction_key"
+                            type="password"
+                            value="<?= htmlspecialchars((string) $apiConfig['transnoxTransactionKey']) ?>"
+                            placeholder="TSYS transactionKey"
+                        >
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="transnox_developer_id">Developer ID (TransNox)</label>
+                    <input
+                        id="transnox_developer_id"
+                        name="transnox_developer_id"
+                        type="text"
+                        value="<?= htmlspecialchars((string) $apiConfig['transnoxDeveloperId']) ?>"
+                        placeholder="TSYS developerID"
                     >
                 </div>
 
