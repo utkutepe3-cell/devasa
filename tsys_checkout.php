@@ -53,16 +53,6 @@ function esc(string $value): string
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
-function isPlaceholderGatewayUrl(string $url): bool
-{
-    $host = (string)parse_url($url, PHP_URL_HOST);
-    if ($host === '') {
-        return false;
-    }
-
-    return str_contains($host, 'replace-with-your-tsys-endpoint.example.com');
-}
-
 function normalizeMerchantNumber(string $merchantNumber): string
 {
     $digits = preg_replace('/\D+/', '', trim($merchantNumber)) ?? '';
@@ -142,7 +132,7 @@ function requestToGateway(string $url, array $payload, string $apiKey): array
         'Content-Type: application/json',
         'Accept: application/json',
     ];
-    if (trim($apiKey) !== '' && $apiKey !== 'replace-with-your-tsys-api-key') {
+    if (trim($apiKey) !== '') {
         $headers[] = 'Authorization: Bearer ' . $apiKey;
     }
 
@@ -208,7 +198,7 @@ if (!is_file(__DIR__ . '/.env')) {
 $config = [
     // Merchant defaults are pre-filled from your provided profile.
     'api_url' => envValue('TSYS_API_URL', 'https://ssl2.vitalps.net/scripts/gateway.dll?transact'),
-    'api_key' => envValue('TSYS_API_KEY', 'replace-with-your-tsys-api-key'),
+    'api_key' => envValue('TSYS_API_KEY', ''),
     'merchant_number' => envValue('TSYS_MERCHANT_NUMBER', '401151759710'),
     'v_number' => envValue('TSYS_V_NUMBER', 'V6298237'),
     'store_number' => envValue('TSYS_STORE_NUMBER', '0001'),
@@ -318,9 +308,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (($effectiveConfig[$required] ?? '') === '') {
                 $errors[] = sprintf('Missing config: %s', $required);
             }
-        }
-        if ($effectiveConfig['api_url'] !== '' && isPlaceholderGatewayUrl($effectiveConfig['api_url'])) {
-            $errors[] = 'TSYS API URL is still placeholder. Enter your real TSYS host URL.';
         }
         if (($effectiveConfig['merchant_number'] ?? '') === '' || strlen((string)$effectiveConfig['merchant_number']) !== 12) {
             $errors[] = 'Merchant number must be 12 digits.';
