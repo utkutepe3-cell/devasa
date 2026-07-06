@@ -187,25 +187,9 @@ function buildPayload(string $transactionType, array $input, array $merchantConf
 function sendToTsys(array $payload, array $apiConfig): array
 {
     if ($apiConfig['baseUrl'] === '') {
-        $transactionType = strtoupper((string) ($payload['transactionType'] ?? 'sale'));
-        return [
-            'ok' => true,
-            'message' => 'Approved (simulation mode). Gercek cekim yapilmadi.',
-            'details' => [
-                'gateway_url' => null,
-                'http_status' => null,
-                'request_payload' => maskRequestPayload($payload),
-                'response' => [
-                    'status' => 'PASS',
-                    'responseCode' => 'A0000-SIM',
-                    'responseMessage' => 'APPROVED (SIMULATION ONLY)',
-                    'transactionType' => $transactionType,
-                    'authCode' => strtoupper(substr(md5((string) microtime(true)), 0, 6)),
-                    'transactionID' => 'SIM-' . strtoupper(substr(md5((string) microtime(true)), 0, 12)),
-                    'note' => 'No processor endpoint configured. This is a simulated approval, not a real payment.',
-                ],
-            ],
-        ];
+        throw new RuntimeException(
+            'Gercek odeme icin TSYS gateway URL zorunludur. Processorunuzdan aldiginiz tam endpoint URL degerini girin.'
+        );
     }
 
     $endpoint = resolveTsysEndpoint($apiConfig['baseUrl']);
@@ -567,6 +551,7 @@ function array_filter_recursive(array $data): array
                         type="text"
                         value="<?= htmlspecialchars($apiConfig['baseUrl']) ?>"
                         placeholder="https://<sizin-tsys-gateway-domaininiz>/<path>"
+                        required
                     >
                 </div>
                 <div class="row-2">
