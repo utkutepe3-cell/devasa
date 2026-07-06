@@ -16,6 +16,7 @@ Bu repoya tek dosyalik bir PHP odeme ekrani eklendi:
    ```
 
 2. TSYS tarafindan verilen **gercek API endpoint** ve `TSYS_API_KEY` degerlerini `.env` icinde guncelle.
+   - Alternatif olarak bu iki degeri form ekranindan da girebilirsin.
 
 3. Yerelde calistir:
 
@@ -34,3 +35,4 @@ Bu repoya tek dosyalik bir PHP odeme ekrani eklendi:
 - Bu ornek teknik entegrasyon iskeletidir.
 - Gercek internet odemelerinde PCI DSS kapsaminda kart verisini dogrudan sunucuna almamak icin TSYS hosted fields/tokenizasyon kullan.
 - 3D Secure, AVS/CVV kontrolu, fraud kurallari ve webhook ile onay/reversal akisi eklenmelidir.
+- Iade (`return`) islemi icin ekranda `Original Transaction ID` zorunludur.

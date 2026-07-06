@@ -134,27 +134,28 @@ function requestToGateway(string $url, array $payload, string $apiKey): array
 loadEnv(__DIR__ . '/.env');
 
 $config = [
-    'api_url' => envValue('TSYS_API_URL', ''),
-    'api_key' => envValue('TSYS_API_KEY', ''),
-    'merchant_number' => envValue('TSYS_MERCHANT_NUMBER', ''),
-    'v_number' => envValue('TSYS_V_NUMBER', ''),
-    'store_number' => envValue('TSYS_STORE_NUMBER', ''),
-    'terminal_number' => envValue('TSYS_TERMINAL_NUMBER', ''),
-    'location_number' => envValue('TSYS_LOCATION_NUMBER', ''),
+    // Merchant defaults are pre-filled from your provided profile.
+    'api_url' => envValue('TSYS_API_URL', 'https://replace-with-your-tsys-endpoint.example.com/transactions'),
+    'api_key' => envValue('TSYS_API_KEY', 'replace-with-your-tsys-api-key'),
+    'merchant_number' => envValue('TSYS_MERCHANT_NUMBER', '401151759710'),
+    'v_number' => envValue('TSYS_V_NUMBER', 'V6298237'),
+    'store_number' => envValue('TSYS_STORE_NUMBER', '0001'),
+    'terminal_number' => envValue('TSYS_TERMINAL_NUMBER', '7000'),
+    'location_number' => envValue('TSYS_LOCATION_NUMBER', '00001'),
     'currency' => envValue('TSYS_CURRENCY', 'USD'),
 ];
 
 $merchantProfile = [
-    'dba' => envValue('TSYS_DBA', ''),
-    'street' => envValue('TSYS_STREET', ''),
-    'city' => envValue('TSYS_CITY', ''),
-    'state' => envValue('TSYS_STATE', ''),
-    'zip' => envValue('TSYS_ZIP', ''),
-    'customer_service_phone' => envValue('TSYS_CUSTOMER_SERVICE_PHONE', ''),
-    'mcc' => envValue('TSYS_MCC', ''),
-    'bin' => envValue('TSYS_BIN', ''),
-    'chain' => envValue('TSYS_CHAIN', ''),
-    'agent_bank' => envValue('TSYS_AGENT_BANK', ''),
+    'dba' => envValue('TSYS_DBA', 'Get Your Life Back LLC'),
+    'street' => envValue('TSYS_STREET', '28 Tindall Rd'),
+    'city' => envValue('TSYS_CITY', 'Middletown'),
+    'state' => envValue('TSYS_STATE', 'New Jersey'),
+    'zip' => envValue('TSYS_ZIP', '07748'),
+    'customer_service_phone' => envValue('TSYS_CUSTOMER_SERVICE_PHONE', '+1 800-993-0929'),
+    'mcc' => envValue('TSYS_MCC', '5499'),
+    'bin' => envValue('TSYS_BIN', '494306'),
+    'chain' => envValue('TSYS_CHAIN', '031776'),
+    'agent_bank' => envValue('TSYS_AGENT_BANK', '031776'),
 ];
 
 $errors = [];
@@ -163,10 +164,13 @@ $result = null;
 $defaults = [
     'transaction_type' => 'sale',
     'amount' => '10.00',
+    'api_url' => (string)$config['api_url'],
+    'api_key' => (string)$config['api_key'],
     'card_number' => '',
     'expiry' => '',
     'cvv' => '',
     'zip' => '',
+    'original_transaction_id' => '',
     'user_trace' => bin2hex(random_bytes(4)),
 ];
 
@@ -174,10 +178,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = [
         'transaction_type' => strtolower(trim((string)($_POST['transaction_type'] ?? 'sale'))),
         'amount' => trim((string)($_POST['amount'] ?? '')),
+        'api_url' => trim((string)($_POST['api_url'] ?? (string)$config['api_url'])),
+        'api_key' => trim((string)($_POST['api_key'] ?? (string)$config['api_key'])),
         'card_number' => trim((string)($_POST['card_number'] ?? '')),
         'expiry' => trim((string)($_POST['expiry'] ?? '')),
         'cvv' => trim((string)($_POST['cvv'] ?? '')),
         'zip' => trim((string)($_POST['zip'] ?? '')),
+        'original_transaction_id' => trim((string)($_POST['original_transaction_id'] ?? '')),
         'user_trace' => trim((string)($_POST['user_trace'] ?? '')),
     ];
     $defaults = array_merge($defaults, $input);
@@ -214,10 +221,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'ZIP must be 5 digits (or ZIP+4).';
     }
 
+    $effectiveConfig = $config;
+    $effectiveConfig['api_url'] = $input['api_url'];
+    $effectiveConfig['api_key'] = $input['api_key'];
+
     foreach (['api_url', 'api_key', 'merchant_number', 'v_number'] as $required) {
-        if (($config[$required] ?? '') === '') {
+        if (($effectiveConfig[$required] ?? '') === '') {
             $errors[] = sprintf('Missing config: %s', $required);
         }
+    }
+    if ($input['transaction_type'] === 'return' && $input['original_transaction_id'] === '') {
+        $errors[] = 'Original transaction ID is required for return.';
     }
 
     if ($errors === []) {
@@ -261,9 +275,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
             ],
         ];
+        if ($input['transaction_type'] === 'return') {
+            $payload['transaction']['original_transaction_id'] = $input['original_transaction_id'];
+            $payload['transaction']['reason'] = 'customer_requested_refund';
+        }
 
         try {
-            $gatewayResult = requestToGateway($config['api_url'], $payload, $config['api_key']);
+            $gatewayResult = requestToGateway($effectiveConfig['api_url'], $payload, $effectiveConfig['api_key']);
             $result = [
                 'success' => $gatewayResult['http_code'] >= 200 && $gatewayResult['http_code'] < 300,
                 'http_code' => $gatewayResult['http_code'],
@@ -324,6 +342,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="post" autocomplete="off">
             <div class="row">
                 <div class="col">
+                    <label for="api_url">Gateway API URL</label>
+                    <input id="api_url" name="api_url" value="<?= esc((string)$defaults['api_url']) ?>" placeholder="https://.../transactions" required>
+                </div>
+                <div class="col">
+                    <label for="api_key">Gateway API Key</label>
+                    <input id="api_key" name="api_key" value="<?= esc((string)$defaults['api_key']) ?>" placeholder="API key" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
                     <label for="transaction_type">Transaction Type</label>
                     <select id="transaction_type" name="transaction_type">
                         <option value="sale" <?= $defaults['transaction_type'] === 'sale' ? 'selected' : '' ?>>Sale</option>
@@ -359,6 +388,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="col">
                     <label for="user_trace">User Trace</label>
                     <input id="user_trace" name="user_trace" value="<?= esc((string)$defaults['user_trace']) ?>" placeholder="trace-id">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <label for="original_transaction_id">Original Transaction ID (Return icin)</label>
+                    <input
+                        id="original_transaction_id"
+                        name="original_transaction_id"
+                        value="<?= esc((string)$defaults['original_transaction_id']) ?>"
+                        placeholder="sale transaction id"
+                    >
                 </div>
             </div>
 
