@@ -35,7 +35,7 @@ $merchantConfig = [
     'approvedMonthlyVolume' => '$30,000.00',
 ];
 
-$defaultGatewayUrl = '';
+$defaultGatewayUrl = 'https://api.tsys.com/transactions';
 $gatewayUrl = trim((string) ($_POST['gateway_url'] ?? getenv('TSYS_API_URL') ?: $defaultGatewayUrl));
 $apiKeyInput = trim((string) ($_POST['api_key'] ?? getenv('TSYS_API_KEY') ?: ''));
 $apiSecretInput = trim((string) ($_POST['api_secret'] ?? getenv('TSYS_API_SECRET') ?: ''));
@@ -170,7 +170,7 @@ function buildPayload(string $transactionType, array $input, array $merchantConf
 function sendToTsys(array $payload, array $apiConfig): array
 {
     if ($apiConfig['baseUrl'] === '') {
-        throw new RuntimeException('Gateway URL bos birakilamaz.');
+        throw new RuntimeException('TSYS gateway URL bos birakilamaz.');
     }
 
     $endpoint = resolveTsysEndpoint($apiConfig['baseUrl']);
@@ -531,6 +531,7 @@ function array_filter_recursive(array $data): array
                         type="text"
                         value="<?= htmlspecialchars($apiConfig['baseUrl']) ?>"
                         placeholder="https://your-tsys-gateway.example.com/api"
+                        required
                     >
                 </div>
                 <div class="row-2">
@@ -542,6 +543,7 @@ function array_filter_recursive(array $data): array
                             type="text"
                             value="<?= htmlspecialchars((string) $apiConfig['apiKey']) ?>"
                             placeholder="TSYS API key"
+                            required
                         >
                     </div>
                     <div class="field">
