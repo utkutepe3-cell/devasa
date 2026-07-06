@@ -35,9 +35,12 @@ $merchantConfig = [
     'approvedMonthlyVolume' => '$30,000.00',
 ];
 
+$defaultGatewayUrl = 'https://stagegw.transnox.com/servlets/transnox_api_server';
+$gatewayUrl = trim((string) ($_POST['gateway_url'] ?? getenv('TSYS_API_URL') ?: $defaultGatewayUrl));
+
 $apiConfig = [
-    // Canli/sandbox endpointi ortama gore degistirebilirsiniz.
-    'baseUrl' => rtrim((string) getenv('TSYS_API_URL'), '/'),
+    // Canli/sandbox endpointi: form alani > environment > fallback.
+    'baseUrl' => rtrim($gatewayUrl, '/'),
     'apiKey' => (string) getenv('TSYS_API_KEY'),
     'apiSecret' => (string) getenv('TSYS_API_SECRET'),
     'timeout' => 45,
@@ -165,10 +168,10 @@ function buildPayload(string $transactionType, array $input, array $merchantConf
 function sendToTsys(array $payload, array $apiConfig): array
 {
     if ($apiConfig['baseUrl'] === '') {
-        throw new RuntimeException('TSYS_API_URL is not set.');
+        throw new RuntimeException('Gateway URL bos birakilamaz.');
     }
 
-    $endpoint = $apiConfig['baseUrl'] . '/transactions';
+    $endpoint = resolveTsysEndpoint($apiConfig['baseUrl']);
 
     $headers = [
         'Content-Type: application/json',
@@ -213,11 +216,23 @@ function sendToTsys(array $payload, array $apiConfig): array
         'ok' => $ok,
         'message' => $message,
         'details' => [
+            'gateway_url' => $endpoint,
             'http_status' => $httpStatus,
             'request_payload' => maskRequestPayload($payload),
             'response' => $decoded,
         ],
     ];
+}
+
+function resolveTsysEndpoint(string $baseUrl): string
+{
+    // Eger URL dogrudan endpoint ise oldugu gibi kullan.
+    if (preg_match('/(\/transactions|transnox_api_server)$/', $baseUrl) === 1) {
+        return $baseUrl;
+    }
+
+    // Varsayilan REST endpoint sonu.
+    return $baseUrl . '/transactions';
 }
 
 function parseExpiry(string $expiration): array
@@ -502,6 +517,17 @@ function array_filter_recursive(array $data): array
                         <label for="amount_refund">Amount (USD, optional for full return)</label>
                         <input id="amount_refund" type="text" inputmode="decimal" placeholder="10.00">
                     </div>
+                </div>
+
+                <div class="field">
+                    <label for="gateway_url">TSYS Gateway URL</label>
+                    <input
+                        id="gateway_url"
+                        name="gateway_url"
+                        type="text"
+                        value="<?= htmlspecialchars($apiConfig['baseUrl']) ?>"
+                        placeholder="https://stagegw.transnox.com/servlets/transnox_api_server"
+                    >
                 </div>
 
                 <button class="cta" id="action-button" type="submit">Run Charge</button>
