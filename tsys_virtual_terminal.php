@@ -35,7 +35,7 @@ $merchantConfig = [
     'approvedMonthlyVolume' => '$30,000.00',
 ];
 
-$defaultGatewayUrl = 'https://stagegw.transnox.com/servlets/transnox_api_server';
+$defaultGatewayUrl = 'https://stagegw.transnox.com/servlets/TransNox_API_Server';
 $gatewayUrl = trim((string) ($_POST['gateway_url'] ?? getenv('TSYS_API_URL') ?: $defaultGatewayUrl));
 
 $apiConfig = [
@@ -179,7 +179,7 @@ function sendToTsys(array $payload, array $apiConfig): array
         'Accept: application/json',
     ];
 
-    $isTransNoxGateway = stripos($endpoint, 'transnox_api_server') !== false;
+    $isTransNoxGateway = isTransNoxGatewayUrl($endpoint);
     if ($isTransNoxGateway) {
         $requestBody = buildTransNoxXmlRequest($payload, $apiConfig);
         $headers = [
@@ -244,13 +244,43 @@ function sendToTsys(array $payload, array $apiConfig): array
 
 function resolveTsysEndpoint(string $baseUrl): string
 {
+    $parsed = parse_url($baseUrl);
+    $host = strtolower((string) ($parsed['host'] ?? ''));
+    $path = (string) ($parsed['path'] ?? '');
+
+    // Sadece host verilirse TSYS TransNox varsayilan servlet endpointine yonlen.
+    if (($host === 'stagegw.transnox.com' || $host === 'gateway.transit-pass.com')
+        && ($path === '' || $path === '/')) {
+        return rtrim($baseUrl, '/') . '/servlets/TransNox_API_Server';
+    }
+
+    // /servlets ile bitiyorsa tamamlayici endpoint ekle.
+    if ($path !== '' && preg_match('#/servlets/?$#i', $path) === 1) {
+        return rtrim($baseUrl, '/') . '/TransNox_API_Server';
+    }
+
     // Eger URL dogrudan endpoint ise oldugu gibi kullan.
-    if (preg_match('/(\/transactions|transnox_api_server)$/', $baseUrl) === 1) {
+    if (preg_match('/(\/transactions|transnox_api_server)$/i', $baseUrl) === 1) {
         return $baseUrl;
     }
 
     // Varsayilan REST endpoint sonu.
     return $baseUrl . '/transactions';
+}
+
+function isTransNoxGatewayUrl(string $url): bool
+{
+    if (stripos($url, 'transnox_api_server') !== false) {
+        return true;
+    }
+
+    $parsed = parse_url($url);
+    $host = strtolower((string) ($parsed['host'] ?? ''));
+    if ($host === 'stagegw.transnox.com' || $host === 'gateway.transit-pass.com') {
+        return true;
+    }
+
+    return false;
 }
 
 function buildTransNoxXmlRequest(array $payload, array $apiConfig): string
@@ -637,7 +667,7 @@ function array_filter_recursive(array $data): array
                         name="gateway_url"
                         type="text"
                         value="<?= htmlspecialchars($apiConfig['baseUrl']) ?>"
-                        placeholder="https://stagegw.transnox.com/servlets/transnox_api_server"
+                        placeholder="https://stagegw.transnox.com/servlets/TransNox_API_Server"
                     >
                 </div>
 
