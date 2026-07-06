@@ -173,16 +173,27 @@ function sendToTsys(array $payload, array $apiConfig): array
 
     $endpoint = resolveTsysEndpoint($apiConfig['baseUrl']);
 
+    $requestBody = json_encode($payload, JSON_UNESCAPED_SLASHES);
     $headers = [
         'Content-Type: application/json',
         'Accept: application/json',
     ];
 
-    // Cogu TSYS entegrasyonunda API key/secret veya benzeri auth gerekir.
-    if ($apiConfig['apiKey'] !== '' && $apiConfig['apiSecret'] !== '') {
-        $headers[] = 'Authorization: Basic ' . base64_encode($apiConfig['apiKey'] . ':' . $apiConfig['apiSecret']);
-    } elseif ($apiConfig['apiKey'] !== '') {
-        $headers[] = 'Authorization: Bearer ' . $apiConfig['apiKey'];
+    $isTransNoxGateway = stripos($endpoint, 'transnox_api_server') !== false;
+    if ($isTransNoxGateway) {
+        $requestBody = buildTransNoxXmlRequest($payload, $apiConfig);
+        $headers = [
+            'Content-Type: text/xml; charset=utf-8',
+            'Accept: text/xml, application/xml, text/plain',
+            'User-Agent: TSYS-Virtual-Terminal-PHP/1.0',
+        ];
+    } else {
+        // Cogu REST tabanli TSYS entegrasyonunda API key/secret veya benzeri auth gerekir.
+        if ($apiConfig['apiKey'] !== '' && $apiConfig['apiSecret'] !== '') {
+            $headers[] = 'Authorization: Basic ' . base64_encode($apiConfig['apiKey'] . ':' . $apiConfig['apiSecret']);
+        } elseif ($apiConfig['apiKey'] !== '') {
+            $headers[] = 'Authorization: Bearer ' . $apiConfig['apiKey'];
+        }
     }
 
     $ch = curl_init($endpoint);
@@ -191,7 +202,7 @@ function sendToTsys(array $payload, array $apiConfig): array
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => (int) $apiConfig['timeout'],
         CURLOPT_HTTPHEADER => $headers,
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_SLASHES),
+        CURLOPT_POSTFIELDS => $requestBody,
     ]);
 
     $body = curl_exec($ch);
@@ -206,7 +217,12 @@ function sendToTsys(array $payload, array $apiConfig): array
 
     $decoded = json_decode($body, true);
     if (!is_array($decoded)) {
-        $decoded = ['raw_response' => $body];
+        $xml = @simplexml_load_string($body);
+        if ($xml !== false) {
+            $decoded = json_decode(json_encode($xml), true);
+        } else {
+            $decoded = ['raw_response' => $body];
+        }
     }
 
     $ok = $httpStatus >= 200 && $httpStatus < 300;
@@ -217,8 +233,10 @@ function sendToTsys(array $payload, array $apiConfig): array
         'message' => $message,
         'details' => [
             'gateway_url' => $endpoint,
+            'gateway_mode' => $isTransNoxGateway ? 'tsys_xml' : 'json_rest',
             'http_status' => $httpStatus,
             'request_payload' => maskRequestPayload($payload),
+            'request_body_preview' => $isTransNoxGateway ? buildMaskedTransNoxXmlPreview($payload, $apiConfig) : null,
             'response' => $decoded,
         ],
     ];
@@ -233,6 +251,99 @@ function resolveTsysEndpoint(string $baseUrl): string
 
     // Varsayilan REST endpoint sonu.
     return $baseUrl . '/transactions';
+}
+
+function buildTransNoxXmlRequest(array $payload, array $apiConfig): string
+{
+    $rootMap = [
+        'sale' => 'SaleRequest',
+        'auth' => 'AuthRequest',
+        'void' => 'VoidRequest',
+        'refund' => 'ReturnRequest',
+    ];
+
+    $transactionType = (string) ($payload['transactionType'] ?? 'sale');
+    $rootNode = $rootMap[$transactionType] ?? 'SaleRequest';
+
+    $doc = new DOMDocument('1.0', 'UTF-8');
+    $doc->formatOutput = false;
+    $root = $doc->createElement($rootNode);
+    $doc->appendChild($root);
+
+    if (in_array($transactionType, ['sale', 'auth'], true)) {
+        $customerData = $doc->createElement('CustomerData');
+        $accountInfo = $doc->createElement('AccountInfo');
+        $cardInfo = $doc->createElement('CardInfo');
+        appendXmlValue($doc, $cardInfo, 'CCNum', (string) ($payload['paymentMethod']['cardNumber'] ?? ''));
+        appendXmlValue($doc, $cardInfo, 'CCMo', (string) ($payload['paymentMethod']['expirationMonth'] ?? ''));
+        appendXmlValue($doc, $cardInfo, 'CCYr', (string) ($payload['paymentMethod']['expirationYear'] ?? ''));
+        appendXmlValue($doc, $cardInfo, 'CVV2', (string) ($payload['paymentMethod']['cvv'] ?? ''));
+        $accountInfo->appendChild($cardInfo);
+        $customerData->appendChild($accountInfo);
+
+        $billingZip = (string) ($payload['paymentMethod']['billingZip'] ?? '');
+        if ($billingZip !== '') {
+            $billingAddress = $doc->createElement('BillingAddress');
+            appendXmlValue($doc, $billingAddress, 'Zip', $billingZip);
+            $customerData->appendChild($billingAddress);
+        }
+
+        $root->appendChild($customerData);
+    }
+
+    $transactionData = $doc->createElement('TransactionData');
+    appendXmlValue($doc, $transactionData, 'VendorId', resolveVendorId($payload, $apiConfig));
+    appendXmlValue($doc, $transactionData, 'VendorPassword', resolveVendorPassword($payload, $apiConfig));
+    appendXmlValue($doc, $transactionData, 'MerchantNumber', (string) ($payload['merchant']['merchantNumber'] ?? ''));
+    appendXmlValue($doc, $transactionData, 'VNumber', (string) ($payload['merchant']['vNumber'] ?? ''));
+    appendXmlValue($doc, $transactionData, 'StoreNumber', (string) ($payload['merchant']['storeNumber'] ?? ''));
+    appendXmlValue($doc, $transactionData, 'TerminalNumber', (string) ($payload['merchant']['terminalNumber'] ?? ''));
+    appendXmlValue($doc, $transactionData, 'Chain', (string) ($payload['merchant']['chain'] ?? ''));
+    appendXmlValue($doc, $transactionData, 'InvoiceNumber', (string) ($payload['invoiceNumber'] ?? ''));
+
+    if (isset($payload['amount'])) {
+        appendXmlValue($doc, $transactionData, 'TransactionAmount', (string) $payload['amount']);
+    }
+
+    if (in_array($transactionType, ['void', 'refund'], true)) {
+        // Referans bazli islemlerde yaygin alan adlari.
+        appendXmlValue($doc, $transactionData, 'PNRef', (string) ($payload['originalTransactionId'] ?? ''));
+        appendXmlValue($doc, $transactionData, 'TransactionId', (string) ($payload['originalTransactionId'] ?? ''));
+    }
+
+    $root->appendChild($transactionData);
+    return $doc->saveXML() ?: '';
+}
+
+function appendXmlValue(DOMDocument $doc, DOMElement $parent, string $name, string $value): void
+{
+    $value = trim($value);
+    if ($value === '') {
+        return;
+    }
+    $parent->appendChild($doc->createElement($name, $value));
+}
+
+function resolveVendorId(array $payload, array $apiConfig): string
+{
+    if ($apiConfig['apiKey'] !== '') {
+        return (string) $apiConfig['apiKey'];
+    }
+    return (string) ($payload['merchant']['merchantNumber'] ?? '');
+}
+
+function resolveVendorPassword(array $payload, array $apiConfig): string
+{
+    if ($apiConfig['apiSecret'] !== '') {
+        return (string) $apiConfig['apiSecret'];
+    }
+    return (string) ($payload['merchant']['vNumber'] ?? '');
+}
+
+function buildMaskedTransNoxXmlPreview(array $payload, array $apiConfig): string
+{
+    $maskedPayload = maskRequestPayload($payload);
+    return buildTransNoxXmlRequest($maskedPayload, $apiConfig);
 }
 
 function parseExpiry(string $expiration): array
