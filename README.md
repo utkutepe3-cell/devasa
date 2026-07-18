@@ -2,47 +2,54 @@
 
 PayTrace'de sale (satış) bölümünden refund yapmanızı sağlayan araç. Satışları listeler, seçtiğiniz işleme doğrudan refund veya void uygular.
 
-## Kurulum
+**Windows EXE olarak çalışır - Python kurmanıza gerek yok!**
 
+## EXE Oluşturma (Windows)
+
+### Yöntem 1: Bat Dosyası ile (Kolay)
+```
+build_exe.bat
+```
+Çift tıklayın, `dist\PayTrace_Refund.exe` oluşacaktır.
+
+### Yöntem 2: Manuel
 ```bash
-pip install -r requirements.txt
+pip install pyinstaller requests
+pyinstaller --onefile --console --name PayTrace_Refund paytrace_refund.py
 ```
 
-## Hızlı Başlangıç
+EXE dosyası `dist\PayTrace_Refund.exe` konumunda oluşur.
 
-### 1. Satışları Listele ve Refund Yap (İnteraktif Mod)
-```bash
-python paytrace_refund.py -u API_USER -p API_PASS -i INTEGRATOR_ID --list-sales
+## Kullanım (EXE)
+
+### Satışları Listele ve Refund Yap
 ```
-Bu komut:
-- Son 30 günün satışlarını tablo halinde gösterir
-- Refund yapmak istediğiniz işlemi numara ile seçersiniz
-- Tam veya kısmi iade tutarını girersiniz
-- Onayladığınızda refund işlenir
-
-### 2. Son 90 Günün Satışlarını Listele
-```bash
-python paytrace_refund.py -u API_USER -p API_PASS -i INTEGRATOR_ID --list-sales --days 90
+PayTrace_Refund.exe -u KULLANICI -p SIFRE -i INTEGRATOR_ID --list-sales
 ```
 
-### 3. Direkt Transaction ID ile Refund
-```bash
-python paytrace_refund.py -u API_USER -p API_PASS -i INTEGRATOR_ID -t TRANSACTION_ID
+### Direkt Transaction ID ile Refund
+```
+PayTrace_Refund.exe -u KULLANICI -p SIFRE -i INTEGRATOR_ID -t 12345
 ```
 
-### 4. Kısmi Refund
-```bash
-python paytrace_refund.py -u API_USER -p API_PASS -i INTEGRATOR_ID -t TRANSACTION_ID --amount 10.50
+### Kısmi Refund
+```
+PayTrace_Refund.exe -u KULLANICI -p SIFRE -i INTEGRATOR_ID -t 12345 --amount 10.50
 ```
 
-### 5. Void (Aynı Gün İptal)
-```bash
-python paytrace_refund.py -u API_USER -p API_PASS -i INTEGRATOR_ID -t TRANSACTION_ID --void
+### Void (Aynı Gün İptal)
+```
+PayTrace_Refund.exe -u KULLANICI -p SIFRE -i INTEGRATOR_ID -t 12345 --void
 ```
 
-### 6. Sandbox Test
-```bash
-python paytrace_refund.py -u API_USER -p API_PASS -i INTEGRATOR_ID --list-sales --sandbox
+### Son 90 Günün Satışları
+```
+PayTrace_Refund.exe -u KULLANICI -p SIFRE -i INTEGRATOR_ID --list-sales --days 90
+```
+
+### Sandbox Test
+```
+PayTrace_Refund.exe -u KULLANICI -p SIFRE -i INTEGRATOR_ID --list-sales --sandbox
 ```
 
 ## Parametreler
