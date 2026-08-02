@@ -1,0 +1,12 @@
+{
+  "name": "virtual-terminal",
+  "version": "1.0.0",
+  "description": "Virtual Terminal - Payment Processing Interface with Unmatched Refund Support",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx live-server --port=3000"
+  },
+  "keywords": ["payment", "virtual-terminal", "refund"],
+  "license": "MIT"
+}
