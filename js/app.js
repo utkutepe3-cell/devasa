@@ -1,14 +1,15 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    // Auth & User Info
-    const currentUser = JSON.parse(sessionStorage.getItem('vt_user') || '{}');
+    // User Info
+    const currentUser = { name: 'Merchant Admin' };
     const userInfoEl = document.getElementById('userInfo');
-    if (userInfoEl && currentUser.name) {
+    if (userInfoEl) {
         userInfoEl.textContent = currentUser.name;
     }
     document.getElementById('logoutBtn').addEventListener('click', function() {
-        sessionStorage.removeItem('vt_user');
-        window.location.href = 'login.html';
+        if (confirm('Çıkış yapmak istediğinizden emin misiniz?')) {
+            window.location.href = 'login.html';
+        }
     });
 
     // Navigation
