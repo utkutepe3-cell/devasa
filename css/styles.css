@@ -195,6 +195,14 @@ body {
     margin-left: auto;
 }
 
+.user-info {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: var(--bg-light);
+    border-radius: var(--radius);
+}
+
 /* Page Content */
 .page-content {
     padding: 24px;

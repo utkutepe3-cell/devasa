@@ -1,5 +1,16 @@
 document.addEventListener('DOMContentLoaded', function () {
 
+    // Auth & User Info
+    const currentUser = JSON.parse(sessionStorage.getItem('vt_user') || '{}');
+    const userInfoEl = document.getElementById('userInfo');
+    if (userInfoEl && currentUser.name) {
+        userInfoEl.textContent = currentUser.name;
+    }
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        sessionStorage.removeItem('vt_user');
+        window.location.href = 'login.html';
+    });
+
     // Navigation
     const navSubitems = document.querySelectorAll('.nav-subitem');
     const navGroupToggles = document.querySelectorAll('.nav-group-toggle');
@@ -82,6 +93,37 @@ document.addEventListener('DOMContentLoaded', function () {
     modalCloseBtn.addEventListener('click', hideModal);
     modalOverlay.addEventListener('click', function (e) {
         if (e.target === modalOverlay) hideModal();
+    });
+
+    document.getElementById('printReceipt').addEventListener('click', function() {
+        const content = document.getElementById('modalBody').innerHTML;
+        const title = document.getElementById('modalTitle').textContent;
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        printWindow.document.write(`
+            <html><head><title>Makbuz - ${title}</title>
+            <style>
+                body { font-family: monospace; padding: 20px; font-size: 12px; }
+                h2 { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; }
+                .result-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dotted #ccc; }
+                .result-label { font-weight: bold; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .footer { text-align: center; margin-top: 20px; border-top: 2px dashed #000; padding-top: 10px; font-size: 10px; }
+            </style></head><body>
+            <div class="header">
+                <h2>VIRTUAL TERMINAL</h2>
+                <p>Payment Gateway Receipt</p>
+            </div>
+            <h3>${title}</h3>
+            ${content}
+            <div class="footer">
+                <p>Transaction Date: ${new Date().toLocaleString()}</p>
+                <p>Merchant: ${currentUser.name || 'N/A'}</p>
+                <p>--- Thank You ---</p>
+            </div>
+            </body></html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
     });
 
     // Transaction storage
