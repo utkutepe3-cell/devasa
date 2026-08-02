@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Terminal - Payment Processing</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-credit-card"></i>
+                <span>Payment Gateway</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="nav-group expanded">
+                    <a href="#" class="nav-item nav-group-toggle active-group" data-toggle="virtual-terminal">
+                        <i class="fas fa-terminal"></i>
+                        <span>Virtual Terminal</span>
+                        <i class="fas fa-chevron-down toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu" id="virtual-terminal">
+                        <a href="#" class="nav-subitem" data-page="swipe-card">
+                            <span>Swipe Card</span>
+                        </a>
+                        <a href="#" class="nav-subitem active" data-page="key-enter-card">
+                            <span>Key Enter Card</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="multiple-transactions">
+                            <span>Multiple Transactions</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="batch-upload">
+                            <span>Batch Upload</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="store-forward">
+                            <span>Store &amp; Forward</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="void-transactions">
+                            <span>Void Transactions</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="refund-transactions">
+                            <span>Refund Transactions</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="unmatched-refund">
+                            <span>Unmatched Refund</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="capture-transactions">
+                            <span>Capture Transactions</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="add-level3-data">
+                            <span>Add Level 3 Data</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="add-level2-data">
+                            <span>Add Level 2 Data</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="view-transactions">
+                            <span>View Transactions</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="view-batch-reports">
+                            <span>View Batch Reports</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="settle-transactions">
+                            <span>Settle Transactions</span>
+                        </a>
+                        <a href="#" class="nav-subitem" data-page="quickbooks-report">
+                            <span>QuickBooks® Report</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="checks">
+                        <i class="fas fa-money-check"></i>
+                        <span>Checks</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="checks"></div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="recurring">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Recurring Payments</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="recurring"></div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="integration">
+                        <i class="fas fa-plug"></i>
+                        <span>Integration</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="integration"></div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="shopping-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Shopping Cart</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="shopping-cart"></div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="products">
+                        <i class="fas fa-box"></i>
+                        <span>Products</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="products"></div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="coupons">
+                        <i class="fas fa-tag"></i>
+                        <span>Coupons</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="coupons"></div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="customers">
+                        <i class="fas fa-users"></i>
+                        <span>Customers</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="customers"></div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="discretionary">
+                        <i class="fas fa-database"></i>
+                        <span>Discretionary Data</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="discretionary"></div>
+                </div>
+                <div class="nav-group">
+                    <a href="#" class="nav-item nav-group-toggle" data-toggle="reports">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Reports</span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
+                    </a>
+                    <div class="nav-submenu collapsed" id="reports"></div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="top-bar-actions">
+                    <button class="btn btn-info btn-sm" id="showHints">
+                        <i class="fas fa-lightbulb"></i> Show Hints
+                    </button>
+                    <button class="btn btn-link" id="helpBtn">
+                        Help <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content Container -->
+            <div class="page-content" id="pageContent">
+                <!-- Key Enter Card Page (Default) -->
+                <div class="page active" id="page-key-enter-card">
+                    <h1 class="page-title">Key Enter Card</h1>
+
+                    <!-- Select Customer Section -->
+                    <section class="form-section">
+                        <h2 class="section-title">Select Customer</h2>
+                        <div class="form-group">
+                            <label>Customer</label>
+                            <select class="form-control" id="customerSelect">
+                                <option value="">--Customer ID / Name--</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Search Criteria</label>
+                            <input type="text" class="form-control" id="searchCriteria" placeholder="">
+                        </div>
+                        <div class="form-group">
+                            <label></label>
+                            <button class="btn btn-primary" id="searchCustomer">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Transaction Details Section -->
+                    <section class="form-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Transaction Details</h2>
+                            <div class="section-actions">
+                                <button class="btn btn-teal btn-sm" id="shippingEstimate">
+                                    <i class="fas fa-truck"></i> Shipping Estimate
+                                </button>
+                                <button class="btn btn-default btn-sm" id="clearForm">
+                                    <i class="fas fa-sync-alt"></i> Clear Form
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Transaction Type</label>
+                            <select class="form-control form-control-sm" id="transactionType">
+                                <option value="sale">Sale</option>
+                                <option value="auth_only">Auth Only</option>
+                                <option value="credit">Credit</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount</label>
+                            <input type="text" class="form-control required-field" id="amount" placeholder="">
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Credit Card Number</label>
+                            <input type="text" class="form-control required-field" id="cardNumber" placeholder="" maxlength="19">
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Expiration Date</label>
+                            <div class="expiry-group">
+                                <input type="text" class="form-control form-control-xs" id="expMonth" placeholder="" maxlength="2">
+                                <span class="expiry-separator">/</span>
+                                <input type="text" class="form-control form-control-xs" id="expYear" placeholder="" maxlength="4">
+                            </div>
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>CSC</label>
+                            <input type="text" class="form-control form-control-xs" id="csc" placeholder="Optional" maxlength="4">
+                        </div>
+                        <div class="form-group">
+                            <label>Invoice Number</label>
+                            <input type="text" class="form-control" id="invoiceNumber" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing Name</label>
+                            <input type="text" class="form-control" id="billingName" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing Address</label>
+                            <input type="text" class="form-control" id="billingAddress" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing Address 2</label>
+                            <input type="text" class="form-control" id="billingAddress2" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing City</label>
+                            <input type="text" class="form-control" id="billingCity" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing State</label>
+                            <input type="text" class="form-control form-control-xs" id="billingState" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing ZIP</label>
+                            <input type="text" class="form-control" id="billingZip" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing Country</label>
+                            <select class="form-control" id="billingCountry">
+                                <option value="US">United States</option>
+                                <option value="TR">Turkey</option>
+                                <option value="GB">United Kingdom</option>
+                                <option value="DE">Germany</option>
+                                <option value="FR">France</option>
+                                <option value="CA">Canada</option>
+                                <option value="AU">Australia</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" class="form-control" id="email" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" class="form-control" id="phone" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea class="form-control" id="description" placeholder="Optional" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-lg" id="processTransaction">
+                                <i class="fas fa-lock"></i> Process Transaction
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Unmatched Refund Page -->
+                <div class="page" id="page-unmatched-refund">
+                    <h1 class="page-title">Unmatched Refund</h1>
+                    <div class="info-banner">
+                        <i class="fas fa-info-circle"></i>
+                        <span>An unmatched refund allows you to issue a refund to a card without referencing an original transaction. This is useful when the original transaction was processed through a different system or terminal.</span>
+                    </div>
+
+                    <!-- Refund Details Section -->
+                    <section class="form-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Refund Details</h2>
+                            <div class="section-actions">
+                                <button class="btn btn-default btn-sm" id="clearRefundForm">
+                                    <i class="fas fa-sync-alt"></i> Clear Form
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Refund Amount</label>
+                            <input type="text" class="form-control required-field" id="refundAmount" placeholder="">
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Credit Card Number</label>
+                            <input type="text" class="form-control required-field" id="refundCardNumber" placeholder="" maxlength="19">
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Expiration Date</label>
+                            <div class="expiry-group">
+                                <input type="text" class="form-control form-control-xs" id="refundExpMonth" placeholder="" maxlength="2">
+                                <span class="expiry-separator">/</span>
+                                <input type="text" class="form-control form-control-xs" id="refundExpYear" placeholder="" maxlength="4">
+                            </div>
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>CSC</label>
+                            <input type="text" class="form-control form-control-xs" id="refundCsc" placeholder="Optional" maxlength="4">
+                        </div>
+                        <div class="form-group">
+                            <label>Reason for Refund</label>
+                            <select class="form-control" id="refundReason">
+                                <option value="">-- Select Reason --</option>
+                                <option value="customer_request">Customer Request</option>
+                                <option value="duplicate_charge">Duplicate Charge</option>
+                                <option value="product_return">Product Return</option>
+                                <option value="service_not_provided">Service Not Provided</option>
+                                <option value="pricing_error">Pricing Error</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Reason Description</label>
+                            <textarea class="form-control" id="refundReasonDescription" placeholder="Provide additional details about the refund..." rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Original Transaction Date</label>
+                            <input type="date" class="form-control" id="originalTransDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Invoice / Reference Number</label>
+                            <input type="text" class="form-control" id="refundInvoiceNumber" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Customer Name</label>
+                            <input type="text" class="form-control" id="refundCustomerName" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Customer Email</label>
+                            <input type="email" class="form-control" id="refundCustomerEmail" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing Address</label>
+                            <input type="text" class="form-control" id="refundBillingAddress" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing City</label>
+                            <input type="text" class="form-control" id="refundBillingCity" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing State</label>
+                            <input type="text" class="form-control form-control-xs" id="refundBillingState" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing ZIP</label>
+                            <input type="text" class="form-control" id="refundBillingZip" placeholder="Optional">
+                        </div>
+                        <div class="form-group">
+                            <label>Billing Country</label>
+                            <select class="form-control" id="refundBillingCountry">
+                                <option value="US">United States</option>
+                                <option value="TR">Turkey</option>
+                                <option value="GB">United Kingdom</option>
+                                <option value="DE">Germany</option>
+                                <option value="FR">France</option>
+                                <option value="CA">Canada</option>
+                                <option value="AU">Australia</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Internal Notes</label>
+                            <textarea class="form-control" id="refundNotes" placeholder="Internal notes (not shared with customer)" rows="3"></textarea>
+                        </div>
+
+                        <div class="refund-confirmation">
+                            <div class="confirmation-checkbox">
+                                <input type="checkbox" id="refundConfirm">
+                                <label for="refundConfirm">I confirm this refund is being issued without a matching original transaction and I have authorization to process it.</label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-warning btn-lg" id="processRefund">
+                                <i class="fas fa-undo"></i> Process Unmatched Refund
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Swipe Card Page -->
+                <div class="page" id="page-swipe-card">
+                    <h1 class="page-title">Swipe Card</h1>
+                    <section class="form-section">
+                        <div class="swipe-card-container">
+                            <div class="swipe-icon">
+                                <i class="fas fa-credit-card fa-5x"></i>
+                            </div>
+                            <p class="swipe-instruction">Please swipe the card through the card reader</p>
+                            <div class="form-group">
+                                <label>Card Data (Track 1 &amp; 2)</label>
+                                <input type="text" class="form-control" id="swipeData" placeholder="Swipe card to populate...">
+                            </div>
+                            <div class="form-group">
+                                <label>Amount</label>
+                                <input type="text" class="form-control required-field" id="swipeAmount" placeholder="">
+                                <span class="required-indicator">●</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Transaction Type</label>
+                                <select class="form-control form-control-sm" id="swipeTransType">
+                                    <option value="sale">Sale</option>
+                                    <option value="auth_only">Auth Only</option>
+                                </select>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary btn-lg" id="processSwipe">
+                                    <i class="fas fa-lock"></i> Process Transaction
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Void Transactions Page -->
+                <div class="page" id="page-void-transactions">
+                    <h1 class="page-title">Void Transactions</h1>
+                    <section class="form-section">
+                        <h2 class="section-title">Void a Transaction</h2>
+                        <div class="form-group">
+                            <label>Transaction ID</label>
+                            <input type="text" class="form-control required-field" id="voidTransId" placeholder="">
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Reason for Void</label>
+                            <textarea class="form-control" id="voidReason" placeholder="Optional" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-danger btn-lg" id="processVoid">
+                                <i class="fas fa-ban"></i> Void Transaction
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Refund Transactions Page -->
+                <div class="page" id="page-refund-transactions">
+                    <h1 class="page-title">Refund Transactions</h1>
+                    <section class="form-section">
+                        <h2 class="section-title">Refund a Transaction</h2>
+                        <div class="form-group">
+                            <label>Transaction ID</label>
+                            <input type="text" class="form-control required-field" id="refundTransId" placeholder="">
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Refund Amount</label>
+                            <input type="text" class="form-control required-field" id="matchedRefundAmount" placeholder="Leave blank for full refund">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-warning btn-lg" id="processMatchedRefund">
+                                <i class="fas fa-undo"></i> Process Refund
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- View Transactions Page -->
+                <div class="page" id="page-view-transactions">
+                    <h1 class="page-title">View Transactions</h1>
+                    <section class="form-section">
+                        <h2 class="section-title">Transaction Search</h2>
+                        <div class="form-group">
+                            <label>Date From</label>
+                            <input type="date" class="form-control" id="searchDateFrom">
+                        </div>
+                        <div class="form-group">
+                            <label>Date To</label>
+                            <input type="date" class="form-control" id="searchDateTo">
+                        </div>
+                        <div class="form-group">
+                            <label>Transaction Type</label>
+                            <select class="form-control" id="searchTransType">
+                                <option value="">All</option>
+                                <option value="sale">Sale</option>
+                                <option value="auth_only">Auth Only</option>
+                                <option value="refund">Refund</option>
+                                <option value="void">Void</option>
+                                <option value="unmatched_refund">Unmatched Refund</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select class="form-control" id="searchStatus">
+                                <option value="">All</option>
+                                <option value="approved">Approved</option>
+                                <option value="declined">Declined</option>
+                                <option value="pending">Pending</option>
+                                <option value="voided">Voided</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label></label>
+                            <button class="btn btn-primary" id="searchTransactions">
+                                <i class="fas fa-search"></i> Search Transactions
+                            </button>
+                        </div>
+                    </section>
+                    <section class="form-section">
+                        <div class="transaction-table-container">
+                            <table class="transaction-table" id="transactionTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Card (Last 4)</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionTableBody">
+                                    <tr class="empty-row">
+                                        <td colspan="7">No transactions found. Use search to find transactions.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Capture Transactions Page -->
+                <div class="page" id="page-capture-transactions">
+                    <h1 class="page-title">Capture Transactions</h1>
+                    <section class="form-section">
+                        <h2 class="section-title">Capture an Authorized Transaction</h2>
+                        <div class="form-group">
+                            <label>Transaction ID</label>
+                            <input type="text" class="form-control required-field" id="captureTransId" placeholder="">
+                            <span class="required-indicator">●</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount to Capture</label>
+                            <input type="text" class="form-control" id="captureAmount" placeholder="Leave blank for full amount">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-success btn-lg" id="processCapture">
+                                <i class="fas fa-check-circle"></i> Capture Transaction
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Settle Transactions Page -->
+                <div class="page" id="page-settle-transactions">
+                    <h1 class="page-title">Settle Transactions</h1>
+                    <section class="form-section">
+                        <h2 class="section-title">Batch Settlement</h2>
+                        <p class="form-description">Settle all captured transactions in the current batch.</p>
+                        <div class="form-actions">
+                            <button class="btn btn-success btn-lg" id="settleBatch">
+                                <i class="fas fa-check-double"></i> Settle Batch
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Generic placeholder for other pages -->
+                <div class="page" id="page-multiple-transactions">
+                    <h1 class="page-title">Multiple Transactions</h1>
+                    <section class="form-section">
+                        <p class="form-description">Process multiple transactions from a list.</p>
+                    </section>
+                </div>
+                <div class="page" id="page-batch-upload">
+                    <h1 class="page-title">Batch Upload</h1>
+                    <section class="form-section">
+                        <h2 class="section-title">Upload Transaction File</h2>
+                        <div class="form-group">
+                            <label>Select File</label>
+                            <input type="file" class="form-control" id="batchFile" accept=".csv,.txt">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-lg" id="uploadBatch">
+                                <i class="fas fa-upload"></i> Upload &amp; Process
+                            </button>
+                        </div>
+                    </section>
+                </div>
+                <div class="page" id="page-store-forward">
+                    <h1 class="page-title">Store &amp; Forward</h1>
+                    <section class="form-section">
+                        <p class="form-description">Store transactions locally and forward when connection is available.</p>
+                    </section>
+                </div>
+                <div class="page" id="page-add-level3-data">
+                    <h1 class="page-title">Add Level 3 Data</h1>
+                    <section class="form-section">
+                        <p class="form-description">Add Level 3 line-item details to transactions for lower interchange rates.</p>
+                    </section>
+                </div>
+                <div class="page" id="page-add-level2-data">
+                    <h1 class="page-title">Add Level 2 Data</h1>
+                    <section class="form-section">
+                        <p class="form-description">Add Level 2 data (tax, PO number) to transactions for lower interchange rates.</p>
+                    </section>
+                </div>
+                <div class="page" id="page-view-batch-reports">
+                    <h1 class="page-title">View Batch Reports</h1>
+                    <section class="form-section">
+                        <p class="form-description">View settlement batch history and reports.</p>
+                    </section>
+                </div>
+                <div class="page" id="page-quickbooks-report">
+                    <h1 class="page-title">QuickBooks® Report</h1>
+                    <section class="form-section">
+                        <p class="form-description">Export transaction data in QuickBooks-compatible format.</p>
+                    </section>
+                </div>
+                <div class="page" id="page-dashboard">
+                    <h1 class="page-title">Dashboard</h1>
+                    <section class="dashboard-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="todaySales">$0.00</span>
+                                <span class="stat-label">Today's Sales</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-exchange-alt"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="todayTransactions">0</span>
+                                <span class="stat-label">Today's Transactions</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-undo"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="todayRefunds">$0.00</span>
+                                <span class="stat-label">Today's Refunds</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="todayDeclined">0</span>
+                                <span class="stat-label">Declined</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="form-section">
+                        <h2 class="section-title">Recent Transactions</h2>
+                        <div class="transaction-table-container">
+                            <table class="transaction-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTransactions">
+                                    <tr class="empty-row">
+                                        <td colspan="5">No recent transactions.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for transaction results -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Transaction Result</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" id="modalCloseBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
