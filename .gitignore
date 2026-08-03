@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+build/
+*.spec
+hits_*.txt
+paytrace_hits_*.txt
