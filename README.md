@@ -80,6 +80,34 @@ python paytrace_checker.py -f combo.txt --json
 | `--json` | JSON formatında çıktı |
 | `--timeout` | İstek zaman aşımı (varsayılan: 30s) |
 
+## EXE Yapma (Windows)
+
+### Otomatik (bat dosyasıyla)
+
+`build_exe.bat` dosyasına çift tıkla. Otomatik olarak:
+1. Gerekli paketleri yükler
+2. EXE derler
+3. `dist\paytrace_checker.exe` oluşturur
+
+### Manuel
+
+```bash
+pip install requests pyinstaller
+pyinstaller --onefile --name paytrace_checker --console paytrace_checker.py
+```
+
+EXE dosyası `dist\paytrace_checker.exe` klasöründe oluşur.
+
+### EXE Kullanımı
+
+```
+paytrace_checker.exe -f combo.txt -t 10
+paytrace_checker.exe -u admin -p test123
+paytrace_checker.exe -f combo.txt -t 5 -o hits.txt --sandbox
+```
+
+> Python kurulu olmasına gerek yok, sadece EXE ve combo.txt aynı klasörde olsun.
+
 ## API Bilgisi
 
 - **Production:** `https://api.paytrace.com/oauth/token`
