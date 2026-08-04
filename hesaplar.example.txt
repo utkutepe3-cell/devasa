@@ -1,0 +1,9 @@
+# PayTrace hesaplarınız — her satırda bir hesap
+# Desteklenen formatlar:
+#   kullanici:sifre
+#   kullanici|sifre
+#   kullanici sifre
+#
+# Ornek:
+# merchant1:Parola123!
+# merchant2|Parola456!
