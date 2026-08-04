@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+hesaplar.txt
+tokens/
+token_*.json
+*.exe
+dist/
+build/
+*.spec
