@@ -95,7 +95,7 @@ export function PaymentTab({
               onChange={(e) => {
                 const v = e.target.value as SaleType
                 setSaleType(v)
-                if (v === 'Gift') {
+                if (v === 'Gift' || v === 'ACH') {
                   setTranType('Sale')
                   if (mode === 'Token') setMode('Manual')
                 }
@@ -103,6 +103,7 @@ export function PaymentTab({
             >
               <option value="Credit">Credit</option>
               <option value="Gift">Gift</option>
+              <option value="ACH">ACH</option>
             </select>
           </div>
 
@@ -115,19 +116,19 @@ export function PaymentTab({
               >
                 <option value="Manual">Manual</option>
                 <option value="Swipe">Swipe</option>
-                <option value="Token" disabled={saleType === 'Gift'}>
+                <option value="Token" disabled={saleType === 'Gift' || saleType === 'ACH'}>
                   Token
                 </option>
               </select>
             </div>
           )}
 
-          <div className={`field ${saleType !== 'Credit' ? 'disabled' : ''}`}>
+          <div className={`field ${saleType === 'Gift' ? 'disabled' : ''}`}>
             <label>Transaction Type</label>
             <select
               value={tranType}
               onChange={(e) => setTranType(e.target.value as TranType)}
-              disabled={saleType !== 'Credit'}
+              disabled={saleType === 'Gift'}
             >
               <option value="Sale">Sale</option>
               <option value="Return">Return</option>
@@ -153,7 +154,7 @@ export function PaymentTab({
         {mode === 'Manual' && (
           <div className="grid two" style={{ marginTop: 12 }}>
             <div className="field">
-              <label>Card Number</label>
+              <label>{saleType === 'ACH' ? 'Account Number' : 'Card Number'}</label>
               <input
                 placeholder="################"
                 value={account}
@@ -162,9 +163,9 @@ export function PaymentTab({
               />
             </div>
             <div className={`field ${saleType === 'Gift' ? 'disabled' : ''}`}>
-              <label>Expiration Date</label>
+              <label>{saleType === 'ACH' ? 'Routing (demo)' : 'Expiration Date'}</label>
               <input
-                placeholder="1231"
+                placeholder={saleType === 'ACH' ? '#########' : '1231'}
                 value={expiration}
                 onChange={(e) => setExpiration(e.target.value)}
                 disabled={saleType === 'Gift'}

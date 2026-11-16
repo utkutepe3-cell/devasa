@@ -2,10 +2,11 @@ import type { MerchantConfig, PaymentResponse, RecurringAccount } from '../types
 import { DEFAULT_CONFIG } from '../types'
 
 const KEYS = {
-  config: 'devasa.vt.config',
-  payments: 'devasa.vt.payments',
-  recurring: 'devasa.vt.recurring',
-  gift: 'devasa.vt.gift',
+  config: 'cornerpay.vt.config',
+  payments: 'cornerpay.vt.payments',
+  recurring: 'cornerpay.vt.recurring',
+  gift: 'cornerpay.vt.gift',
+  session: 'cornerpay.vt.session',
 } as const
 
 function read<T>(key: string, fallback: T): T {
@@ -52,4 +53,16 @@ export function loadGiftResponses(): PaymentResponse[] {
 
 export function saveGiftResponses(items: PaymentResponse[]) {
   write(KEYS.gift, items.slice(0, 50))
+}
+
+export function loadSession(): { username: string } | null {
+  return read(KEYS.session, null)
+}
+
+export function saveSession(username: string) {
+  write(KEYS.session, { username })
+}
+
+export function clearSession() {
+  localStorage.removeItem(KEYS.session)
 }

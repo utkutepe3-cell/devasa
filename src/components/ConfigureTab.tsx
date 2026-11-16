@@ -37,8 +37,8 @@ export function ConfigureTab({ config, setConfig, notify }: Props) {
       <h2>Configuration</h2>
       <p className="lede">Enable your virtual terminal</p>
       <div className="notice">
-        This is a sandbox. Secrets stay in your browser localStorage and are never sent to a
-        processor.
+        CornerPay sandbox only. Merchant secrets stay in browser localStorage and are never
+        sent to CornerPay.NET or any live processor.
       </div>
 
       <form onSubmit={onSave}>
@@ -110,8 +110,8 @@ export function ConfigureTab({ config, setConfig, notify }: Props) {
         </label>
 
         <p className="hint">
-          API URL: sandbox://devasa/vt · RPT URL: sandbox://devasa/reports · Receipt URL:
-          local
+          API URL: sandbox://cornerpay/vt · RPT URL: sandbox://cornerpay/reports · Receipt
+          URL: local
         </p>
 
         <button className="btn btn-primary" type="submit">

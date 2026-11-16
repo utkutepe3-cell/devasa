@@ -59,7 +59,14 @@ export async function processPayment(input: {
       ? `TOK-${(input.token || 'XXXX').slice(0, 8).toUpperCase()}`
       : input.account.replace(/\D/g, '')
 
-  if (input.mode === 'Manual' && account.length < 13) {
+  if (input.mode === 'Manual' && input.saleType === 'ACH') {
+    if (account.length < 6) {
+      return { ok: false, message: 'Enter a bank account number (demo: 6+ digits).' }
+    }
+    if (!input.expiration || input.expiration.replace(/\D/g, '').length < 9) {
+      return { ok: false, message: 'Routing number is required (demo: 9 digits).' }
+    }
+  } else if (input.mode === 'Manual' && account.length < 13) {
     return { ok: false, message: 'Enter a valid card number (demo accepts 13–19 digits).' }
   }
 
@@ -74,7 +81,12 @@ export async function processPayment(input: {
     return { ok: false, message: 'Declined — demo card ending in 0000 is always declined.' }
   }
 
-  const brand = input.saleType === 'Gift' ? 'Gift' : detectBrand(account)
+  const brand =
+    input.saleType === 'Gift'
+      ? 'Gift'
+      : input.saleType === 'ACH'
+        ? 'ACH'
+        : detectBrand(account)
   const response: PaymentResponse = {
     id: crypto.randomUUID(),
     account: maskAccount(account),

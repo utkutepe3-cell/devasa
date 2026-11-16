@@ -1,6 +1,6 @@
 export type TabId = 'payment' | 'recurring' | 'gift' | 'reports' | 'configure'
 
-export type SaleType = 'Credit' | 'Gift'
+export type SaleType = 'Credit' | 'Gift' | 'ACH'
 export type EntryMode = 'Manual' | 'Swipe' | 'Token'
 export type TranType = 'Sale' | 'Return'
 export type GiftOp = 'Sale' | 'Load' | 'Balance'

@@ -17,7 +17,7 @@ export function ReceiptModal({ open, onClose, config, response }: Props) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="receipt" id="print-receipt">
           <div className="center">
-            <div>*{config.merchantName || 'DevAsa Demo Merchant'}*</div>
+            <div>*{config.merchantName || 'CornerPay Demo Merchant'}*</div>
             {config.merchantAddress1 && <div>{config.merchantAddress1}</div>}
             {config.merchantAddress2 && <div>{config.merchantAddress2}</div>}
             {config.merchantPhone && <div>{config.merchantPhone}</div>}

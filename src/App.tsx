@@ -7,13 +7,16 @@ import type {
   TabId,
 } from './types'
 import {
+  clearSession,
   loadConfig,
   loadGiftResponses,
   loadPayments,
   loadRecurring,
+  loadSession,
 } from './lib/storage'
 import { ConfigureTab } from './components/ConfigureTab'
 import { GiftTab } from './components/GiftTab'
+import { LoginScreen } from './components/LoginScreen'
 import { PaymentTab } from './components/PaymentTab'
 import { RecurringTab } from './components/RecurringTab'
 import { ReportsTab } from './components/ReportsTab'
@@ -27,6 +30,7 @@ const TABS: { id: TabId; label: string }[] = [
 ]
 
 export default function App() {
+  const [sessionUser, setSessionUser] = useState<string | null>(null)
   const [tab, setTab] = useState<TabId>('configure')
   const [config, setConfig] = useState<MerchantConfig>(loadConfig)
   const [payments, setPayments] = useState<PaymentResponse[]>(loadPayments)
@@ -36,8 +40,14 @@ export default function App() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    setTab(config.secret ? 'payment' : 'configure')
+    const session = loadSession()
+    if (session?.username) setSessionUser(session.username)
   }, [])
+
+  useEffect(() => {
+    if (!sessionUser) return
+    setTab(config.secret ? 'payment' : 'configure')
+  }, [sessionUser])
 
   function notify(type: NotificationItem['type'], message: string) {
     const item: NotificationItem = {
@@ -57,20 +67,41 @@ export default function App() {
     setNotifications((list) => list.filter((n) => n.id !== id))
   }
 
+  function signOut() {
+    clearSession()
+    setSessionUser(null)
+    setNotifications([])
+  }
+
+  if (!sessionUser) {
+    return <LoginScreen onEnter={setSessionUser} />
+  }
+
   return (
     <div className="app-shell">
       <div className="terminal">
         <div className="brand-row">
           <div className="brand">
-            <div className="brand-mark" aria-hidden>
-              D<span>A</span>
-            </div>
+            <img
+              className="brand-logo"
+              src="/cornerpay-logo.png"
+              alt="CornerPay"
+              width={180}
+              height={27}
+            />
             <div className="brand-copy">
-              <h1>DevAsa</h1>
-              <p>Virtual Terminal</p>
+              <h1>
+                CornerPay<em>.NET</em>
+              </h1>
+              <p>Virtual Terminal · {sessionUser}</p>
             </div>
           </div>
-          <div className="demo-chip">Sandbox Demo</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div className="demo-chip">Sandbox Demo</div>
+            <button type="button" className="btn btn-ghost" onClick={signOut}>
+              Sign out
+            </button>
+          </div>
         </div>
 
         <nav className="tabs" aria-label="Terminal sections">
@@ -140,8 +171,9 @@ export default function App() {
       </div>
 
       <p className="footer-note">
-        Inspired by Datacap-style virtual terminal flows (Payment · Recurring · Gift · Reports ·
-        Configure). Demo only — no live card processing.
+        CornerPay.NET Virtual Terminal sandbox for Cornerstone Merchant Services —
+        Datacap-style Payment · Recurring · Gift · Reports · Configure. Demo only; no live
+        card processing.
       </p>
 
       {busy && (
