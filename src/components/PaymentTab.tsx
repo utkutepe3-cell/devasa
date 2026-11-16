@@ -43,36 +43,44 @@ export function PaymentTab({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!configured) return
-    setBusy(true)
-    const result = await processPayment({
-      amount,
-      account,
-      saleType,
-      tranType: saleType === 'Gift' ? 'Sale' : tranType,
-      cvv,
-      expiration,
-      zip,
-      token,
-      mode,
-    })
-    setBusy(false)
-
-    if (!result.ok) {
-      notify('error', result.message)
+    if (!configured) {
+      notify('error', 'Configure the terminal before processing payments.')
       return
     }
+    setBusy(true)
+    try {
+      const result = await processPayment({
+        amount,
+        account,
+        saleType,
+        tranType: saleType === 'Gift' ? 'Sale' : tranType,
+        cvv,
+        expiration,
+        zip,
+        token,
+        mode,
+      })
 
-    const next = [result.response, ...responses]
-    setResponses(next)
-    savePayments(next)
-    notify('success', `Approved — Ref ${result.response.refNo}`)
-    setAmount('')
-    setAccount('')
-    setExpiration('')
-    setCvv('')
-    setZip('')
-    setToken('')
+      if (!result.ok) {
+        notify('error', result.message)
+        return
+      }
+
+      const next = [result.response, ...responses]
+      setResponses(next)
+      savePayments(next)
+      notify('success', `Approved — Ref ${result.response.refNo}`)
+      setAmount('')
+      setAccount('')
+      setExpiration('')
+      setCvv('')
+      setZip('')
+      setToken('')
+    } catch (err) {
+      notify('error', err instanceof Error ? err.message : 'Payment processing failed.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

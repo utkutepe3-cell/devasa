@@ -28,27 +28,35 @@ export function GiftTab({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!configured) return
+    if (!configured) {
+      notify('error', 'Configure the terminal before gift operations.')
+      return
+    }
     setBusy(true)
-    const result = await processGift({ op, amount, account, cvv })
-    setBusy(false)
-    if (!result.ok) {
-      notify('error', result.message)
-      return
-    }
+    try {
+      const result = await processGift({ op, amount, account, cvv })
+      if (!result.ok) {
+        notify('error', result.message)
+        return
+      }
 
-    if (op === 'Balance') {
-      notify('info', `Gift balance: $${result.response.balance}`)
-      return
-    }
+      if (op === 'Balance') {
+        notify('info', `Gift balance: $${result.response.balance}`)
+        return
+      }
 
-    const next = [result.response, ...responses]
-    setResponses(next)
-    saveGiftResponses(next)
-    notify('success', `${op} approved — Ref ${result.response.refNo}`)
-    setAmount('')
-    setAccount('')
-    setCvv('')
+      const next = [result.response, ...responses]
+      setResponses(next)
+      saveGiftResponses(next)
+      notify('success', `${op} approved — Ref ${result.response.refNo}`)
+      setAmount('')
+      setAccount('')
+      setCvv('')
+    } catch (err) {
+      notify('error', err instanceof Error ? err.message : 'Gift processing failed.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

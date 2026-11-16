@@ -34,23 +34,28 @@ export function RecurringTab({
       return
     }
     setBusy(true)
-    // Demo tokenization uses a $0.01 auth check
-    const auth = await processPayment({
-      amount: '0.01',
-      account,
-      saleType: 'Credit',
-      tranType: 'Sale',
-      expiration,
-      cvv,
-      mode: 'Manual',
-    })
-    setBusy(false)
+    try {
+      // Demo tokenization uses a $0.01 auth check
+      const auth = await processPayment({
+        amount: '0.01',
+        account,
+        saleType: 'Credit',
+        tranType: 'Sale',
+        expiration,
+        cvv,
+        mode: 'Manual',
+      })
 
-    if (!auth.ok) {
-      notify('error', auth.message)
-      return
+      if (!auth.ok) {
+        notify('error', auth.message)
+        return
+      }
+      finishAdd(auth.response.account, auth.response.refNo)
+    } catch (err) {
+      notify('error', err instanceof Error ? err.message : 'Could not add account.')
+    } finally {
+      setBusy(false)
     }
-    finishAdd(auth.response.account, auth.response.refNo)
   }
 
   function finishAdd(masked: string, tokenSeed: string) {

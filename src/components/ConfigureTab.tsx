@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { MerchantConfig } from '../types'
 import { saveConfig } from '../lib/storage'
 
@@ -11,6 +11,10 @@ interface Props {
 export function ConfigureTab({ config, setConfig, notify }: Props) {
   const [draft, setDraft] = useState<MerchantConfig>(config)
   const [showSecret, setShowSecret] = useState(false)
+
+  useEffect(() => {
+    setDraft(config)
+  }, [config])
 
   function update<K extends keyof MerchantConfig>(key: K, value: MerchantConfig[K]) {
     setDraft((d) => ({ ...d, [key]: value }))
