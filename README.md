@@ -51,6 +51,19 @@ Dokümantasyon:
 
 ---
 
+## Daha fazla benzer site (ek tur 2)
+
+| # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
+|---|-----------|---------------|-------------|-------|
+| P | **Yuno** | [dashboard.y.uno](https://dashboard.y.uno) | **Unreferenced Refund** (standalone credit) | `POST /v1/unreferenced-refunds` · [overview](https://docs.y.uno/docs/direct-integration-use-cases/unreferenced-refunds-overview) · [API](https://docs.y.uno/reference/unreferenced-refunds/create-unreferenced-refund) |
+| Q | **Truvora** | [dashboard.truvora.com/auth](https://dashboard.truvora.com/auth) | **Unreferenced credit** (`type: credit`) | Gateway API · [docs](https://dashboard.truvora.com/docs) |
+| R | **Qualpay** | [app.qualpay.com/login](https://app.qualpay.com/login) | **Credit** (standalone / unlinked) | VT → New Transaction → **Credit** · ilk 30 gün sonra risk açtırır · [transaction types](https://help.qualpay.com/help/transaction-types) · [API credit](https://developer.qualpay.com/reference/credit) |
+| S | **Worldline** | [myportal.worldline-solutions.com](https://myportal.worldline-solutions.com/merchantportal/?login=) | **Standalone refund** / **Originalcredits** | Unreferenced refund API · [standalone refund](https://docs.acquiring.worldline-solutions.com/Features/Card-based/Refunds/standalone-refund) · [OCH originalcredits](https://developer.payments.worldline.com/techguides/api-resources/payment-rest-api-ref-topics/payment-rest-api-ref-origcredits.html) |
+| T | **Spreedly** | [app.spreedly.com](https://app.spreedly.com) · [id.spreedly.com/signin](https://id.spreedly.com/signin) | **General credit** | Gateway’e bağlı unreferenced credit · [API](https://developer.spreedly.com/reference/general-credit-transaction) |
+| U | **Till Payments** | [gateway.tillpayments.com](https://gateway.tillpayments.com/documentation/apiv3) | **Payout** (`cardData`) | Stand-alone payout; connector’da açılır · [API v3](https://gateway.tillpayments.com/documentation/apiv3) |
+
+---
+
 ## Klasik / bilinen benzer siteler (PayTrace / portal.dcap gibi)
 
 | # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
@@ -110,8 +123,12 @@ Dokümantasyon:
 | Open Credit | USAePay |
 | Post Blind Credit | Payment XP |
 | Stand-alone / Detached Credit | Cybersource · Braintree · Visa Acceptance |
-| Unlinked / Unreferenced Refund | Verifone · Adyen |
-| Credit (API) | TabaPay |
+| Unlinked / Unreferenced Refund | Verifone · Adyen · Yuno |
+| Credit (API) | TabaPay · Truvora |
+| Credit (VT standalone) | Qualpay |
+| Standalone refund / Originalcredits | Worldline |
+| General credit | Spreedly |
+| Payout (cardData) | Till Payments |
 
 ---
 
