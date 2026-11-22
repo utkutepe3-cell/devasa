@@ -37,6 +37,20 @@ Dokümantasyon:
 
 ---
 
+## Daha fazla benzer site (ek tur)
+
+| # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
+|---|-----------|---------------|-------------|-------|
+| I | **Shift4** | [dollarsonthenet.net](https://dollarsonthenet.net/login.cfm) (Lighthouse TM) · [myportal.shift4.com](https://myportal.shift4.com/index.cfm?action=user.login) | **Independent Credit** | Stand-alone credit; full PAN gerekir · [API spec](https://epower.shift4.com/pdf/Shift4-Payments-Platform-API-Specifications-v1.10.pdf) |
+| J | **Paysafe** | [merchant.paysafe.com/portal](https://merchant.paysafe.com/portal/login) | **STANDALONE_CREDIT** / **ORIGINAL_CREDIT** | Kart payout API · [Paysafe cards](https://developer.paysafe.com/en/api-docs/payments-api/add-payment-methods/cards/about-card-payments/) · VT: Merchant Back Office |
+| K | **Integrated Commerce (Omni)** | Omni API / Selfcare (destek açar) | **Unreferenced virtual refund** | `POST /transactions/unreferenced-virtual-refund` · [docs](https://docs.omni.integratedcommerce.io/operation/operation-unreferencedrefundcardnotpresent.md) · [Selfcare](https://docs.gateway.integratedcommerce.io/doku.php%3Fid=merchant:existing_merchant:selfcare_system:unreferenced_refunds_after_online_refund_decline.html) |
+| L | **Authorize.Net** | [login.authorize.net](https://login.authorize.net/) / Merchant Interface | **Unlinked Refund (ECC)** | Expanded Credit Capabilities · Payments → Unlinked Refund · [KA-08343](https://support.authorize.net/knowledgebase/Knowledgearticle/?code=KA-08343) |
+| M | **JP Morgan Commerce Center** | Commerce Center VT | **Issue One-Time Credit** | Standalone Refund entitlement · [VT guide PDF](https://developer.payments.jpmorgan.com/api/download/en/system/downloads/commerce/migration/Virtual_Terminal-Commerce_Center_User_Guide.pdf?type=stream) |
+| N | **Worldpay Element/Express** | Worldpay / Element portal | **Stand-alone payout** (adapter) | IXOPAY Worldpay adapter: stand-alone payouts · [adapter](https://adapters.ixopay.com/en/payment-adapter/worldpay) |
+| O | **TabaPay** | TabaPay developer / merchant tools | **Credit** (Unified API) | Sale/Auth/Void/Refund/**Credit** · [terminal docs](https://developers.tabapay.com/docs/terminal-integration) |
+
+---
+
 ## Klasik / bilinen benzer siteler (PayTrace / portal.dcap gibi)
 
 | # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
@@ -53,23 +67,22 @@ Dokümantasyon:
 
 ---
 
-## Daha fazla benzer portal
+## Diğer bilinen benzer portaller
 
 | # | Sağlayıcı | Portal / araç | Özellik adı |
 |---|-----------|---------------|-------------|
-| 12 | **Authorize.Net / Visa Acceptance** | Business Center VT | Stand-alone Credit / Credit Card Credit |
-| 13 | **Cybersource** | EBC Virtual Terminal | Stand-Alone Credit (SAC) |
-| 14 | **Braintree** | Control Panel | Detached Credit |
-| 15 | **Verifone** | Verifone Central / VT | Unlinked / Unmatched Refund |
-| 16 | **Bluefin PayConex** | PayConex Portal | CREDIT (unreferenced) |
-| 17 | **Payroc** | Merchant tools / API | Unreferenced Refund |
-| 18 | **Stax** | Stax Pay / Terminal API | Terminal Credit |
-| 19 | **JP Morgan Commerce Center** | Commerce Center VT | Issue One-Time Credit |
-| 20 | **PayPal Business VT** | PayPal Virtual Terminal | Credit |
-| 21 | **Helcim** | Helcim dashboard | Refund / credit |
-| 22 | **Fluidpay** | Fluidpay gateway VT | Sale / Refund / Void |
-| 23 | **CardPointe / Fiserv** | CardPointe VT | Refund / credit |
-| 24 | **Heartland / Global Payments** | Payments+ / PAX | Blind Return toggle |
+| 12 | **Cybersource** | EBC Virtual Terminal | Stand-Alone Credit (SAC) |
+| 13 | **Braintree** | Control Panel | Detached Credit |
+| 14 | **Verifone** | Verifone Central / VT | Unlinked / Unmatched Refund |
+| 15 | **Bluefin PayConex** | PayConex Portal | CREDIT (unreferenced) |
+| 16 | **Payroc** | Merchant tools / API | Unreferenced Refund |
+| 17 | **Stax** | Stax Pay / Terminal API | Terminal Credit |
+| 18 | **PayPal Business VT** | PayPal Virtual Terminal | Credit |
+| 19 | **Helcim** | Helcim dashboard | Refund / credit |
+| 20 | **Fluidpay** | Fluidpay gateway VT | Sale / Refund / Void |
+| 21 | **CardPointe / Fiserv** | CardPointe VT | Refund / credit |
+| 22 | **Heartland / Global Payments** | Payments+ / PAX | Blind Return toggle |
+| 23 | **Visa Acceptance Business Center** | VT → Credit Card Credit | Stand-alone Credit |
 
 ---
 
@@ -79,7 +92,12 @@ Dokümantasyon:
 |------------------|-----------|
 | Unreferenced Refund | PayTrace · Planet |
 | Return (kart yeniden girilir) | Datacap portal.dcap / vt.dcap |
-| Original Credit (OCT) | Apexx · Inyo · Checkout.com |
+| Original Credit (OCT) | Apexx · Inyo · Checkout.com · Paysafe |
+| Independent Credit | Shift4 |
+| STANDALONE_CREDIT | Paysafe |
+| Unreferenced virtual refund | Integrated Commerce |
+| Unlinked Refund (ECC) | Authorize.Net |
+| Issue One-Time Credit | JP Morgan |
 | Unreferenced Return | Nuvei |
 | Unreferenced credit (`type: credit`) | Chargezoom Gateway |
 | Blind Refund | Fortis |
@@ -91,8 +109,9 @@ Dokümantasyon:
 | Blind Credit | NMI |
 | Open Credit | USAePay |
 | Post Blind Credit | Payment XP |
-| Stand-alone / Detached Credit | Cybersource / Braintree / Authorize.Net |
+| Stand-alone / Detached Credit | Cybersource · Braintree · Visa Acceptance |
 | Unlinked / Unreferenced Refund | Verifone · Adyen |
+| Credit (API) | TabaPay |
 
 ---
 
