@@ -20,7 +20,24 @@ Dokümantasyon:
 
 ---
 
-## Yeni bulunan benzer siteler (PayTrace / portal.dcap gibi)
+## Yeni kuruluşlar / modern platformlar (PayTrace · portal.dcap benzeri)
+
+| # | Sağlayıcı | Kuruluş / tip | Portal girişi | Özellik adı | Kanıt |
+|---|-----------|---------------|---------------|-------------|-------|
+| A | **Apexx Global** | Modern orchestration · Atomic Portal | [portalv2.apexx.global](https://portalv2.apexx.global/) | **Original Credit (OCT)** / standalone credit | VT → Original Credit · [OCT guide](https://support.apexx.global/support/solutions/articles/19000102433-how-do-i-process-original-credit-transactions-unlinked-refunds-) · [VT](https://support.apexx.global/support/solutions/articles/19000166542-product-suite-virtual-terminal) |
+| B | **Planet (WeArePlanet)** | Modern gateway portal | [weareplanet.com/login](https://www.weareplanet.com/login) → Planet Portal | **Unreferenced Refund** | VT’de kart/token ile unreferenced refund · [VT docs](https://docs.weareplanet.com/docs/virtual-terminal) |
+| C | **Chargezoom Gateway** | Yeni self-host gateway + merchant VT | [chargezoomgateway.com/auth](https://chargezoomgateway.com/auth) | **Unreferenced credit** (`type: credit`) | API + merchant VT · [gateway site](https://chargezoomgateway.com/) · [API docs](https://chargezoomgateway.com/docs) |
+| D | **Nuvei** | Control Panel VT (modern REST 2.0) | [cpanel.nuvei.com](https://cpanel.nuvei.com/login) | **Unreferenced Return** | Operations → VT → Transaction Type: Unreferenced Return · [VT docs](https://docs.nuvei.com/documentation/control-panel-docs/operations/virtual-terminal/) |
+| E | **Inyo Global** | Yeni orchestration / Visa Direct | Dashboard (onboarding URL) · [inyoglobal.com](https://www.inyoglobal.com/) | **OCT — Card Payouts** | Visa Direct / Mastercard Send push-to-card · [product](https://www.inyoglobal.com/) |
+| F | **IXOPAY** | Orchestration + VT | [ixopay.com/login](https://www.ixopay.com/login) · [gateway.ixopay.com](https://gateway.ixopay.com/en/login) | VT transaction types (connector’da credit açılabilir) | [VT MOTO](https://documentation.ixopay.com/manual/docs/virtual-terminal-moto) |
+| G | **Adyen** | Customer Area / standalone terminal | Adyen Customer Area | **Unreferenced Refund** | CA’da Allow unreferenced refunds · [docs](https://docs.adyen.com/point-of-sale/basic-tapi-integration/refund-payment/unreferenced) |
+| H | **Checkout.com** | Modern acquirer / money movement | Checkout Dashboard | **OCT** (Original Credit Transaction) | Visa Direct OCT / payouts · [terminology](https://www.checkout.com/docs/business-operations/terminology) |
+
+> Bu satırlar özellikle daha yeni / modern platformlar. OCT = Original Credit Transaction (kart’a push; klasik “blind credit”in network karşılığı).
+
+---
+
+## Klasik / bilinen benzer siteler (PayTrace / portal.dcap gibi)
 
 | # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
 |---|-----------|---------------|-------------|-------|
@@ -60,8 +77,11 @@ Dokümantasyon:
 
 | Sitede görünen ad | Sağlayıcı |
 |------------------|-----------|
-| Unreferenced Refund | PayTrace |
+| Unreferenced Refund | PayTrace · Planet |
 | Return (kart yeniden girilir) | Datacap portal.dcap / vt.dcap |
+| Original Credit (OCT) | Apexx · Inyo · Checkout.com |
+| Unreferenced Return | Nuvei |
+| Unreferenced credit (`type: credit`) | Chargezoom Gateway |
 | Blind Refund | Fortis |
 | Naked Refund / Credit | Clover · Fiserv IPG |
 | Non-referenced Credit | PayPal Payflow Manager |
@@ -72,7 +92,7 @@ Dokümantasyon:
 | Open Credit | USAePay |
 | Post Blind Credit | Payment XP |
 | Stand-alone / Detached Credit | Cybersource / Braintree / Authorize.Net |
-| Unlinked Refund | Verifone |
+| Unlinked / Unreferenced Refund | Verifone · Adyen |
 
 ---
 
