@@ -7,25 +7,52 @@ PayTrace ve Datacap **portal.dcap** gibi, virtual terminal üzerinden **blind / 
 
 ---
 
-## Unmatched Refund (adı birebir geçenler)
+## Unmatched / Unreferenced Refund portalleri (bunun gibi — bir sürü)
 
-| # | Sağlayıcı | Portal | Özellik | Nasıl |
-|---|-----------|--------|---------|-------|
-| U1 | **Xplor Pay / Clearent** | [merchantportal.xplorpay.net](https://merchantportal.xplorpay.net) · [my.clearent.net](https://my.clearent.net/) | **Unmatched Refund** | VT → Take a Payment → **Unmatched Refund** sekmesi · destek açtırır · [VT guide](https://support.xplorpay.com/knowledge-base/merchant-portal-virtual-terminal-user-guide/) |
-| U2 | **Verifone Central** | Verifone Central (merchant login) | **Unmatched Refund** | PPC → **Allow Unmatched Refunds** · VT’de **Unlinked refund** · [docs](https://docs.verifone.com/online-payments/payment-actions/unmatched-refunds) |
+> Aynı özellik: satışa bağlı olmayan iade. Adlar: **Unmatched** · **Unreferenced** · **Unlinked** · **Blind** · **Independent**.  
+> Çoğu hesapta **kapalı**; destek / risk açtırır.
 
-Aynı iş, farklı isim (Unreferenced / Unlinked / Blind):
-
-| Özellik adı | Siteler |
-|-------------|---------|
-| **Unreferenced Refund** | PayTrace · Planet · Adyen · Yuno · Worldnet · Payroc · Checkout.com · Integrated Commerce |
-| **Unreferenced Return** | Nuvei |
-| **Unlinked Refund** | Authorize.Net (ECC) · Global Payments / OpenEdge · Verifone |
-| **Blind Refund / Blind Credit** | Fortis · NMI |
-| **Independent Refund** | Moneris Go |
-| **CREDIT (unreferenced)** | Bluefin PayConex |
+| # | Portal girişi | Sağlayıcı | Özellik adı |
+|---|---------------|-----------|-------------|
+| 1 | [merchantportal.xplorpay.net](https://merchantportal.xplorpay.net) | Xplor Pay / Clearent | **Unmatched Refund** |
+| 2 | [my.clearent.net](https://my.clearent.net/) | Clearent | **Unmatched Refund** |
+| 3 | [us.live.verifone.cloud](https://us.live.verifone.cloud/) · [emea.live.verifone.cloud](https://emea.live.verifone.cloud/) | Verifone Central | **Unmatched Refund** |
+| 4 | [paytrace.com/Login.pay](https://paytrace.com/Login.pay) | PayTrace | **Unreferenced Refund** |
+| 5 | [portal.dcap.com](https://portal.dcap.com/Account/Login) · [vt.dcap.com](https://vt.dcap.com/#!/configure) | Datacap | **Return** (kart yeniden gir) |
+| 6 | [weareplanet.com/login](https://www.weareplanet.com/login) | Planet | **Unreferenced Refund** |
+| 7 | [cpanel.nuvei.com/login](https://cpanel.nuvei.com/login) | Nuvei | **Unreferenced Return** |
+| 8 | Adyen Customer Area (ca-live.adyen.com) | Adyen | **Unreferenced Refund** |
+| 9 | [dashboard.y.uno](https://dashboard.y.uno) | Yuno | **Unreferenced Refund** |
+| 10 | [login.authorize.net](https://login.authorize.net/) | Authorize.Net | **Unlinked Refund (ECC)** |
+| 11 | [openedgeview.paygateway.com](https://openedgeview.paygateway.com/Account/Login) | Global Payments / OpenEdge | **Unlinked Refund** |
+| 12 | [portal.fortis.tech](https://portal.fortis.tech/) | Fortis | **Blind Refund** |
+| 13 | NMI Merchant Portal (Credit Cards → Credit) | NMI | **Blind Credit** |
+| 14 | [secure.payconex.net](https://secure.payconex.net/) | Bluefin PayConex | **CREDIT** (unreferenced) |
+| 15 | [monerisgo.com](https://www.monerisgo.com) | Moneris Go | **Independent Refund** |
+| 16 | [payments.worldnettps.com/merchant/selfcare/](https://payments.worldnettps.com/merchant/selfcare/) | Worldnet | **Unreferenced Refund** |
+| 17 | [payments.payroc.com/merchant/selfcare/](https://payments.payroc.com/merchant/selfcare/) | Payroc | **Unreferenced Refund** |
+| 18 | Checkout Dashboard | Checkout.com | **Unreferenced Refund** |
+| 19 | [cardpointe.com/account/login](https://cardpointe.com/account/login) | CardPointe | **Force Credit** |
+| 20 | [payjunction.com/.../authenticate](https://www.payjunction.com/trinity/virtualterminal/authenticate) | PayJunction | **Refund** (txn id yok) |
+| 21 | [app.qualpay.com/login](https://app.qualpay.com/login) | Qualpay | **Credit** (standalone) |
+| 22 | [secure.usaepay.com/login](https://secure.usaepay.com/login) | USAePay | **Open Credit** |
+| 23 | [manager.paypal.com](https://manager.paypal.com/) | Payflow | **Non-referenced Credit** |
+| 24 | [ipg-online.com/virtual-terminal](https://www.ipg-online.com/virtual-terminal/) | Clover / Fiserv IPG | **Naked Refund / Credit** |
+| 25 | [portal.solapayments.com](https://portal.solapayments.com/) | Sola / Cardknox | **cc:credit** |
+| 26 | [myvirtualmerchant.com](https://www.myvirtualmerchant.com/VirtualMerchant/login.do) | Elavon Converge | **cccredit** |
+| 27 | [cenpos.net/vt](https://www.cenpos.net/vt/) | Elavon CenPOS | **Credit** (unassociated) |
+| 28 | [portalv2.apexx.global](https://portalv2.apexx.global/) | Apexx | **Original Credit (OCT)** |
+| 29 | [chargezoomgateway.com/auth](https://chargezoomgateway.com/auth) | Chargezoom | **Unreferenced credit** |
+| 30 | [dashboard.truvora.com/auth](https://dashboard.truvora.com/auth) | Truvora | **type: credit** |
+| 31 | [paygate.computop.de/MerchantPortal](https://paygate.computop.de/MerchantPortal/Account/Login) | Computop | **Refund without reference** |
+| 32 | [reports.iq.vantivcnp.com/ui/login](https://reports.iq.vantivcnp.com/ui/login) | Worldpay iQ | **VT Refund** (sistem dışı) |
+| 33 | [dollarsonthenet.net](https://dollarsonthenet.net/login.cfm) | Shift4 | **Independent Credit** |
+| 34 | [merchant.paysafe.com/portal/login](https://merchant.paysafe.com/portal/login) | Paysafe | **STANDALONE_CREDIT** |
+| 35 | [app.staxpayments.com](https://app.staxpayments.com) | Stax | **Credit** (standalone) |
+| 36 | [paymentxp.com](https://www.paymentxp.com/) | Payment XP | **Post Blind Credit** |
 
 ---
+
 
 ## Referans örnekler (istediğin gibi)
 
