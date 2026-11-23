@@ -103,6 +103,20 @@ Dokümantasyon:
 
 ---
 
+## Daha fazla benzer hesap (ek tur 6 — son tur)
+
+| # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
+|---|-----------|---------------|-------------|-------|
+| AN | **CardPointe (Fiserv)** | [cardpointe.com/account/login](https://cardpointe.com/account/login) | **Force Credit** | VT → Force Credit + full PAN; hesapta açılır · [CardPointe VT](https://support.cardpointe.com/cardpointe/cardpointe-desktop-app/) |
+| AO | **Payroc** | [payments.payroc.com/.../selfcare](https://payments.payroc.com/merchant/selfcare/) | **Unreferenced Refund** | `POST /v1/refunds` (paymentId yok) · [docs](https://docs.payroc.com/guides/payments/refunds/unreferenced-refund-card) |
+| AP | **Stax** | [app.staxpayments.com](https://app.staxpayments.com) · [webapp.staxpayments.com](https://webapp.staxpayments.com/Login) | **Credit** (general / standalone) | Terminal API Credit · gateway desteklerse · [Credit API](https://docs.staxpayments.com/reference/credit) |
+| AQ | **Marqeta** | [app.marqeta.com](https://app.marqeta.com) | **Push-to-Card** (OCT) | `POST /pushtocards/disburse` · [docs](https://www.marqeta.com/docs/core-api/push-to-card-payments-hidden/create-disbursement) |
+| AR | **Modern Treasury** | [app.moderntreasury.com](https://app.moderntreasury.com) | **Push to Card** | Visa Direct / Mastercard Send · [product](https://www.moderntreasury.com/payments/rails/push-to-card) |
+
+> Kamuya açık VT/OCT dokümanında yeni benzersiz isimler artık çok seyrek. Büyük oyuncuların çoğu listede.
+
+---
+
 ## Klasik / bilinen benzer siteler (PayTrace / portal.dcap gibi)
 
 | # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
@@ -125,14 +139,12 @@ Dokümantasyon:
 |---|-----------|---------------|-------------|
 | 12 | **Cybersource** | EBC Virtual Terminal | Stand-Alone Credit (SAC) |
 | 13 | **Braintree** | Control Panel | Detached Credit |
-| 14 | **Payroc** | Merchant tools / API | Unreferenced Refund |
-| 15 | **Stax** | Stax Pay / Terminal API | Terminal Credit |
-| 16 | **PayPal Business VT** | PayPal Virtual Terminal | Credit |
-| 17 | **Helcim** | Helcim dashboard | Refund / credit |
-| 18 | **Fluidpay** | Fluidpay gateway VT | Sale / Refund / Void |
-| 19 | **CardPointe / Fiserv** | CardPointe VT | Refund / credit |
-| 20 | **Heartland Payments+** | Payments+ / PAX | Blind Return toggle |
-| 21 | **Visa Acceptance Business Center** | VT → Credit Card Credit | Stand-alone Credit |
+| 14 | **PayPal Business VT** | PayPal Virtual Terminal | Credit |
+| 15 | **Helcim** | Helcim dashboard | Refund / credit |
+| 16 | **Fluidpay** | Fluidpay gateway VT | Sale / Refund / Void |
+| 17 | **Heartland Payments+** | Payments+ / PAX | Blind Return toggle |
+| 18 | **Visa Acceptance Business Center** | VT → Credit Card Credit | Stand-alone Credit |
+| 19 | **Ingo Money** | ingomoney.com (enterprise) | Push-to-card / OCT disbursements |
 
 ---
 
@@ -183,6 +195,10 @@ Dokümantasyon:
 | Visa Direct card payout | Nium |
 | Push to Card | Dwolla · Checkbook · Paywint |
 | Unreferenced Refund (US) | Checkout.com |
+| Force Credit | CardPointe |
+| Unreferenced Refund (API) | Payroc |
+| Credit (general / standalone) | Stax |
+| Push-to-Card (OCT) | Marqeta · Modern Treasury · Dwolla · Checkbook · Paywint |
 
 ---
 
