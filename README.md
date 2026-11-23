@@ -64,6 +64,19 @@ Dokümantasyon:
 
 ---
 
+## Daha fazla benzer hesap (ek tur 3)
+
+| # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
+|---|-----------|---------------|-------------|-------|
+| V | **PayJunction** | [payjunction.com/.../authenticate](https://www.payjunction.com/trinity/virtualterminal/authenticate) | **Refund** (kart + tutar, transactionId yok) | VT → Action: **Refund** + full PAN · [Refund without txn id](https://developer.payjunction.com/hc/en-us/articles/218052417-Refunding-and-Voiding-Transactions) |
+| W | **Rapyd** | [dashboard.rapyd.net](https://dashboard.rapyd.net) | **Card payout (OCT)** | Disburse → Payouts → Card · [create payout](https://docs.rapyd.net/en/create-a-payout.html) · [OCT eligibility](https://docs.rapyd.net/en/card-eligibility-for-card-payouts.html) |
+| X | **Worldpay iQ (Vantiv)** | [reports.iq.vantivcnp.com](https://reports.iq.vantivcnp.com/ui/login) | **VT Refund** (sistem dışı satış) / **CreditCardCredit** | iQ → Operations → Virtual Terminal → Refund · [VT guide](https://docs.worldpay.com/support/iq-reporting-analytics-user-guide/operations-reports-tools/virtualterminal) · [CreditCardCredit](https://docs.worldpay.com/apis/express/express-xml/methods/credit) |
+| Y | **Computop (Nexi Paygate)** | [paygate.computop.de/MerchantPortal](https://paygate.computop.de/MerchantPortal/Account/Login) | **Refund without reference** | Helpdesk açtırır · [REST cards](https://developer.computop.com/display/EN/REST+API+Cards) · [refund external](https://computop-docs.redocly.app/payments/refundexternalpayment) |
+| Z | **Finaro (Credorax)** | Finaro/Credorax gateway · [finaro.com](https://www.finaro.com/) | **Credit** (op. 6 / O=35) | Unreferenced credit · [PaymentsOS Finaro](https://developers.paymentsos.com/docs/connect/partner-providers/finaro.html) · ActiveMerchant `credit: '35'` |
+| AA | **Wirecard / Fiserv PG** | Wirecard Payment Gateway · [doc.wirecard.com](https://doc.wirecard.com/CC_Main.html) | **original-credit** / **PaymentCardCreditTransaction** | Non-referenced OCT · [Wirecard OCT](https://doc.wirecard.com/CC_Main.html) · [Fiserv OCT](https://docs.fiserv.dev/public/docs/visa-oct-restapi) |
+
+---
+
 ## Klasik / bilinen benzer siteler (PayTrace / portal.dcap gibi)
 
 | # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
@@ -129,6 +142,12 @@ Dokümantasyon:
 | Standalone refund / Originalcredits | Worldline |
 | General credit | Spreedly |
 | Payout (cardData) | Till Payments |
+| Refund (no transactionId) | PayJunction |
+| Card payout (OCT) | Rapyd |
+| VT Refund / CreditCardCredit | Worldpay iQ |
+| Refund without reference | Computop |
+| Credit (op. 6 / O=35) | Finaro / Credorax |
+| original-credit / PaymentCardCredit | Wirecard · Fiserv PG |
 
 ---
 
