@@ -90,6 +90,19 @@ Dokümantasyon:
 
 ---
 
+## Daha fazla benzer hesap (ek tur 5)
+
+| # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
+|---|-----------|---------------|-------------|-------|
+| AH | **Elavon CenPOS** | [cenpos.net/vt](https://www.cenpos.net/vt/) · [www3.cenpos.net](https://www3.cenpos.net/ebpphtml5) | **Credit** (önceki satışa bağlı değil) | VT Credit privilege · herhangi kart/tutar · [Cashiering Credit](https://developer.elavon.com/products/cenpos/v1/cashiering-api-reference) |
+| AI | **Worldnet Payments** | [payments.worldnettps.com/.../selfcare](https://payments.worldnettps.com/merchant/selfcare/) | **Unreferenced Refund** | Kart detayı veya token ile; banka onayı · [XML Unreferenced Refund](https://testdocs.worldnettps.com/doku.php?id=developer%3Aapi_specification%3Axml_payment_features) · [SelfCare](https://merchants.worldnetpayments.com/selfcare/introduction) |
+| AJ | **RadiumOne** | API / support (dashboard yok) · [docs.radiumone.io](https://docs.radiumone.io/payments-api/standalone-refunds) | **Standalone / open refund** | `transaction-refund-unreferenced` scope · [standalone refunds](https://docs.radiumone.io/payments-api/standalone-refunds) |
+| AK | **Nium** | [app.nium.com](https://app.nium.com) | **Visa Direct card payout** | Portal + card widget · [Nium Portal](https://docs.nium.com/docs/nium-portal) · [Visa card payouts](https://mpdocs.nium.com/payout-payin/visa-card-payouts) |
+| AL | **Dwolla** | [accounts.dwolla.com/login](https://accounts.dwolla.com/login) | **Push to Card** | Settlement account + Checkout.com · [Push to Card docs](https://developers.dwolla.com/docs/push-to-card) |
+| AM | **Checkout.com** (ek) | Checkout Dashboard | **Unreferenced Refund** | US kart · `payment_type=UnreferencedRefund` · [docs](https://www.checkout.com/docs/payments/manage-payments/refund-a-payment/refund-a-payment-without-a-reference) |
+
+---
+
 ## Klasik / bilinen benzer siteler (PayTrace / portal.dcap gibi)
 
 | # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
@@ -164,6 +177,12 @@ Dokümantasyon:
 | CREDIT (unreferenced) | Bluefin PayConex |
 | Push to Card (OCT) | Checkbook · Paywint |
 | Unmatched / Unlinked Refund | Verifone Central |
+| Credit (unassociated) | Elavon CenPOS |
+| Unreferenced Refund (SelfCare) | Worldnet Payments |
+| Standalone / open refund | RadiumOne |
+| Visa Direct card payout | Nium |
+| Push to Card | Dwolla · Checkbook · Paywint |
+| Unreferenced Refund (US) | Checkout.com |
 
 ---
 
