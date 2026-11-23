@@ -77,6 +77,19 @@ Dokümantasyon:
 
 ---
 
+## Daha fazla benzer hesap (ek tur 4)
+
+| # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
+|---|-----------|---------------|-------------|-------|
+| AB | **Moneris Go** | [monerisgo.com](https://www.monerisgo.com) | **Independent Refund** | Payment → Credit → Transaction type: **Refund** + PAN; varsayılan kapalı · [Go portal guide PDF](https://www.moneris.com/-/media/Files/Products/Moneris-Go-Portal/MonerisGo_Portal_RefGuide-ENG.pdf) |
+| AC | **Global Payments / OpenEdge** | [openedgeview.paygateway.com](https://openedgeview.paygateway.com/Account/Login) · [reporting.globalpay.com](https://reporting.globalpay.com) | **Unlinked Refund** (Standalone Credit) | `POST .../creditreturn` + full card/token · [refund docs](https://developer.globalpayments.com/en-US/partner.globalpayments.com/integrated-partner/payments/manage-payments/refund) |
+| AD | **Bluefin PayConex** | [secure.payconex.net](https://secure.payconex.net/) | **CREDIT** (unreferenced) | Keyed → Transaction Type: **CREDIT**; risk açtırır · [processing](https://developers.bluefin.com/payconex/v4/docs/processing-transactions-1) |
+| AE | **Checkbook** | [app.checkbook.io](https://app.checkbook.io) | **Push to Card (OCT)** | Send Payment → Debit Card · [push-to-card](https://checkbook.io/product/payments/push-to-card/) · [how-to](https://support.checkbook.io/hc/en-us/articles/11286487140123-How-to-send-funds-to-a-Debit-Card) |
+| AF | **Paywint** | [merchant.paywint.com](https://merchant.paywint.com/) | **Push to Card (OCT)** | Visa Direct / Mastercard Send · [product](https://paywint.com/push-to-card/) |
+| AG | **Verifone Central** | Verifone Central (merchant login) | **Unmatched / Unlinked Refund** | PPC’de Allow Unmatched Refunds · VT’de Unlinked refund · [docs](https://docs.verifone.com/online-payments/payment-actions/unmatched-refunds) |
+
+---
+
 ## Klasik / bilinen benzer siteler (PayTrace / portal.dcap gibi)
 
 | # | Sağlayıcı | Portal girişi | Özellik adı | Kanıt |
@@ -99,16 +112,14 @@ Dokümantasyon:
 |---|-----------|---------------|-------------|
 | 12 | **Cybersource** | EBC Virtual Terminal | Stand-Alone Credit (SAC) |
 | 13 | **Braintree** | Control Panel | Detached Credit |
-| 14 | **Verifone** | Verifone Central / VT | Unlinked / Unmatched Refund |
-| 15 | **Bluefin PayConex** | PayConex Portal | CREDIT (unreferenced) |
-| 16 | **Payroc** | Merchant tools / API | Unreferenced Refund |
-| 17 | **Stax** | Stax Pay / Terminal API | Terminal Credit |
-| 18 | **PayPal Business VT** | PayPal Virtual Terminal | Credit |
-| 19 | **Helcim** | Helcim dashboard | Refund / credit |
-| 20 | **Fluidpay** | Fluidpay gateway VT | Sale / Refund / Void |
-| 21 | **CardPointe / Fiserv** | CardPointe VT | Refund / credit |
-| 22 | **Heartland / Global Payments** | Payments+ / PAX | Blind Return toggle |
-| 23 | **Visa Acceptance Business Center** | VT → Credit Card Credit | Stand-alone Credit |
+| 14 | **Payroc** | Merchant tools / API | Unreferenced Refund |
+| 15 | **Stax** | Stax Pay / Terminal API | Terminal Credit |
+| 16 | **PayPal Business VT** | PayPal Virtual Terminal | Credit |
+| 17 | **Helcim** | Helcim dashboard | Refund / credit |
+| 18 | **Fluidpay** | Fluidpay gateway VT | Sale / Refund / Void |
+| 19 | **CardPointe / Fiserv** | CardPointe VT | Refund / credit |
+| 20 | **Heartland Payments+** | Payments+ / PAX | Blind Return toggle |
+| 21 | **Visa Acceptance Business Center** | VT → Credit Card Credit | Stand-alone Credit |
 
 ---
 
@@ -148,6 +159,11 @@ Dokümantasyon:
 | Refund without reference | Computop |
 | Credit (op. 6 / O=35) | Finaro / Credorax |
 | original-credit / PaymentCardCredit | Wirecard · Fiserv PG |
+| Independent Refund | Moneris Go |
+| Unlinked Refund (Standalone Credit) | Global Payments / OpenEdge |
+| CREDIT (unreferenced) | Bluefin PayConex |
+| Push to Card (OCT) | Checkbook · Paywint |
+| Unmatched / Unlinked Refund | Verifone Central |
 
 ---
 
