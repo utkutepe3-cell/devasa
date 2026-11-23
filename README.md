@@ -7,6 +7,26 @@ PayTrace ve Datacap **portal.dcap** gibi, virtual terminal üzerinden **blind / 
 
 ---
 
+## Unmatched Refund (adı birebir geçenler)
+
+| # | Sağlayıcı | Portal | Özellik | Nasıl |
+|---|-----------|--------|---------|-------|
+| U1 | **Xplor Pay / Clearent** | [merchantportal.xplorpay.net](https://merchantportal.xplorpay.net) · [my.clearent.net](https://my.clearent.net/) | **Unmatched Refund** | VT → Take a Payment → **Unmatched Refund** sekmesi · destek açtırır · [VT guide](https://support.xplorpay.com/knowledge-base/merchant-portal-virtual-terminal-user-guide/) |
+| U2 | **Verifone Central** | Verifone Central (merchant login) | **Unmatched Refund** | PPC → **Allow Unmatched Refunds** · VT’de **Unlinked refund** · [docs](https://docs.verifone.com/online-payments/payment-actions/unmatched-refunds) |
+
+Aynı iş, farklı isim (Unreferenced / Unlinked / Blind):
+
+| Özellik adı | Siteler |
+|-------------|---------|
+| **Unreferenced Refund** | PayTrace · Planet · Adyen · Yuno · Worldnet · Payroc · Checkout.com · Integrated Commerce |
+| **Unreferenced Return** | Nuvei |
+| **Unlinked Refund** | Authorize.Net (ECC) · Global Payments / OpenEdge · Verifone |
+| **Blind Refund / Blind Credit** | Fortis · NMI |
+| **Independent Refund** | Moneris Go |
+| **CREDIT (unreferenced)** | Bluefin PayConex |
+
+---
+
 ## Referans örnekler (istediğin gibi)
 
 | # | Sağlayıcı | Portal / VT girişi | Özellik adı | Nasıl |
